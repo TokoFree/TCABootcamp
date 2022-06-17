@@ -28,6 +28,8 @@ Reducer: `CounterVC+Reducer.swift`
 ### Exercise 1: Disable on Minus Button
 We want to make sure the quantity cannot be negative, so at the first run, we will disabled the minus button if the number <= 0.
 
+![Disable Minus Button](Assets/1-disabled_button.gif "Disable Minus Button")
+
 There are 2 ways to do achieve the requirement.
 
 The first one is by adding a new property in the State:
