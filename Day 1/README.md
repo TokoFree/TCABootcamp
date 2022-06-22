@@ -827,11 +827,37 @@ func testSubmitOrderFailed() {
 ```
 
 ## Scope 
-Let's move on, we will cover one of the most useful feature in TCA, which is scoping State and Action to child view/node.
+Let's move on, we will cover one of the most useful feature in TCA, which is scoping State and Action to child view/node. We will reuse the `CounterNode` (minus, plus button, and textField) into our next project. But now it's tightly coupled with the ViewController, let's refactor it together.
 
-We will reuse the `CounterNode` (minus, plus button, and textField) into our next project. But now it's tightly coupled with the ViewController, let's refactor it together.
+Let's try the usual way to demonstrate how easy to child to parent communicatation when using TCA.
 
-We will create a new node named `CounterNode`, create corresponding `CounterState` and `CounterAction` and move all the functionality of the counter into those files.
+You can find the code in the `CounterWithoutStoreNode.swift`. The communication is using plain closure.
+```swift
+var onTapPlus: (() -> ())?
+
+// binding
+plusBtn.rx.tap
+    .asDriver()
+    .drive(onNext: { [weak self] in
+        self?.onTapPlus?()
+    })
+    .disposed(by: rx.disposeBag)
+```
+
+And you can listen in the VC like this:
+```swift
+counterNode.onTapPlus = { [store] in
+    store.send(.didTapPlus)
+}
+
+counterNode.onTextChanged = { [store] text in
+    store.send(.textDidChange(text))
+}
+```
+
+The action `CounterNode` can do is defined as the list of closures. This is ok, but how if I tell you that TCA can handle it better?
+
+We will create a new node that uses Store named `CounterNode`, create corresponding `CounterState` and `CounterAction` and move all the functionality of the counter into those files.
 
 ```swift
 struct CounterState: Equatable {
@@ -976,14 +1002,39 @@ Transforming the State is complete. Lets do the last part, transforming the Acti
 ```swift
 let newStore = store.scope(
     state: \.counterState,
-    action: { smallAction in
-        OrderAction.counter(smallAction)
+    action: { counterAction in
+        OrderAction.counter(counterAction)
     }
 )
 ```
 
-Transforming action is quite different. It is just the reverse of transforming the State. On State, you are giving something in (giving `CounterState` from `OrderVC` into `CounterNode`).
+Transforming action is like transforming the State but in reverse order. On State, you are giving something in (giving `CounterState` from `OrderVC` into `CounterNode`). On Action, the `OrderVC` received actions from the `CounterNode`. That is the reason why in the state, you are given the bigger (OrderState), and need to return the subset of it (CounterState), but on Action is inverted.
+
+Similar to the transforming State, you can simplify the code for Action too. 
+
+Quiz: Can you guess what is the type of `action` parameter in the scope?
+Answer: `(CounterAction) -> OrderAction`
+
+And if you try to do this:
+```swift
+let foo = OrderAction.counter
+```
+The type is the same.
+
+So we can simplify that closure into this:
 
 ```swift
-private lazy var counterNode = CounterNode(store: Store<CounterState, CounterAction>)
+let newStore = store.scope(
+    state: \.counterState,
+    action: OrderAction.counter
+)
+```
+
+Final code:
+
+```swift
+private lazy var counterNode = CounterNode(store: store.scope(
+    state: \.counterState,
+    action: OrderAction.counter
+))
 ```
