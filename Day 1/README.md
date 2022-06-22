@@ -21,20 +21,20 @@ In this lesson, you'll learn how to use:
 
 ![Demo Quantity Editor](Assets/0-start.gif "Quantity Editor")
 
-VC: `CounterVC.swift`
+VC: `OrderVC.swift`
 
-Reducer: `CounterVC+Reducer.swift`
+Reducer: `OrderVC+Reducer.swift`
 
 ### Exercise 1: Disable on Minus Button
-We want to make sure the quantity cannot be negative, so at the first run, we will disabled the minus button if the number <= 0.
+We want to make sure the quantity can't be negative, so at the first run, we will disabled the minus button if the number <= 0.
 
 ![Disable Minus Button](Assets/1-disabled_button.gif "Disable Minus Button")
 
-There are 2 ways to do achieve the requirement.
+There are two ways to achieve the requirement above.
 
 The first one is by adding a new property in the State:
 ```swift
-struct CounterState: Equatable {
+struct OrderState: Equatable {
     var number: Int
     var isMinusButtonEnabled: Bool = false
 }
@@ -53,15 +53,15 @@ case .didTapPlus:
 }
 ```
 
-Run the app and you notice a strange behavior, because we first open the page, the number is set to 1, and the `isMinusButtonEnabled` is default to `false`.
+You'll notice a strange behavior when running the app, the number is 1, but the `isMinusButtonEnabled` is `false`.
 
 Can someone give idea to fix this issue? 🙋🏻‍♂️
 
 ... (continue giving options)
 
-To fix this we can use custom initialization on the `CounterState`:
+To fix this we can use custom initialization on the `OrderState`:
 ```swift
-struct CounterState: Equatable {
+struct OrderState: Equatable {
     var number: Int
     var isMinusButtonEnabled: Bool
 
@@ -84,7 +84,7 @@ var number: Int {
 
 But remember, the `didSet` will NOT get called on initialization. so you need to do the check when in first init.
 ```swift
-struct CounterState: Equatable {
+struct OrderState: Equatable {
     var number: Int {
         didSet {
             setMinusEnabledStatus()
@@ -105,12 +105,12 @@ struct CounterState: Equatable {
 
 The other approach is by leveraging the swift computed property 👍🏻
 ```swift
-struct CounterState: Equatable {
+struct OrderState: Equatable {
     var number: Int
     var isMinusButtonEnabled: Bool { number > 0 }
 }
 ```
-By using computed property, there is no repeatition on the code. Usually we used computed property in TCA only if the property is just derived from the other property (in this case the enabled/disabled status is derived from the `number` property).
+By using computed property, there is no repeatition on the code. Usually we use computed property in TCA only if the property is just derived from the other properties (in this case the enabled/disabled status is derived from the `number` property).
 
 Next, let's re-run the test.
 Strangely the test still green ✅ even though we add new property.
@@ -139,12 +139,12 @@ testStore.send(.didTapPlus) {
 }
 ```
 
-But that could be repetitive, for example when you tapMinus, to make sure that the value is correct, you add the similar code to assert the `isMinusButtonEnabled`.
+But that could be repetitive, for example when you tapMinus, to assure that the value is correct, you add the similar code to assert the `isMinusButtonEnabled`.
 
 The better way to test this, is by testing the plain state without involving the TCA.
 ```swift
 func testEnabledMinusButton() {
-    var state = CounterState(number: 1)
+    var state = OrderState(number: 1)
     
     XCTAssertTrue(state.isMinusButtonEnabled)
     
@@ -167,7 +167,7 @@ There are some cons of computed property which are:
 Next, we will enable keyboard input on the `TextFieldNode`. You can remove the `isEnabled = false` on `TextFieldNode`.
 Then you can listen to the text changed and send it as action to the reducer.
 ```swift
-enum CounterAction: Equatable {
+enum OrderAction: Equatable {
     // ...
     case textDidChange(String)
 }
@@ -187,10 +187,10 @@ case let .textDidChange(string):
     state.number = Int(string) ?? 0
 ```
 
-Because the number type is `Int`, we need to only allow numeric type, if the input is invalid, we will add `errorMessage` that will shown to the user as TextField's `errorMessage` property.
+We only allow numeric type because the number type is `Int`. If the input is invalid, we will add `errorMessage` that will shown to the user as TextField's `errorMessage` property.
 
 ```swift
-struct CounterState {
+struct OrderState {
     var errorMessage: String?
 }
 
@@ -224,13 +224,13 @@ This is not good, we repeat everytime we change the number. But we can't use com
 We will give several ways to fix this:
 1. Using side effect ❌
 ```swift
-enum CounterAction {
+enum OrderAction {
     // ...
     case checkNumber
 }
 
 // Reducer
-let counterReducer = Reducer<CounterState, CounterAction, Void> { state, action, env in
+let orderReducer = Reducer<OrderState, OrderAction, Void> { state, action, env in
     switch action {
     case .didTapMinus:
         state.number -= 1
@@ -258,8 +258,8 @@ There is no more repeatition, next, lets fix the unit test.
 ```swift
 func testTapPlus() {
     let testStore = TestStore(
-        initialState: CounterState(number: 1),
-        reducer: counterReducer,
+        initialState: OrderState(number: 1),
+        reducer: orderReducer,
         environment: ()
     )
 
@@ -272,8 +272,8 @@ func testTapPlus() {
 
 func testChangeTextToNonNumeric() {
     let testStore = TestStore(
-        initialState: CounterState(number: 1),
-        reducer: counterReducer,
+        initialState: OrderState(number: 1),
+        reducer: orderReducer,
         environment: ()
     )
 
@@ -284,14 +284,15 @@ func testChangeTextToNonNumeric() {
 }
 ```
 
-The problem of this approach is the test will have lots of .receive noise. This will make our test less readable by other devs, maybe for this simple case, it still readable, but in more complex case, it can make your test flow more difficult to read. Naturally, the action should represent what users do and side effects. If you read the test above, it's readed like: user tapPlus, then user check the number, which is incorrect.
+The problem of this approach is the test will have lots of .receive noise. IT will make our test less readable by other devs, maybe for this simple case, it still readable, but in more complex case, it can make your test flow more difficult to read. Naturally, the action should represent what users do and side effects. If you read the test above, it's readed like: user tapPlus, then user check the number, which is incorrect.
 
-Let's move to the next approach:
+Let's move to the other approach:
 
 2. Inline function ✅
+
 Next approach is by using function that live inside the reducer. 
 ```swift
-let counterReducer = Reducer<CounterState, CounterAction, Void> { state, action, _ in
+let orderReducer = Reducer<OrderState, OrderAction, Void> { state, action, _ in
     func validateNumber() {
         state.errorMessage = state.number < 0 ? "Error, should >= 0" : nil
     }
@@ -311,8 +312,8 @@ So our test will be more straightforward, you can remove all the `checkNumber` s
 ```swift
 func testChangeToNegativeByButton() {
     let testStore = TestStore(
-        initialState: CounterState(number: 1),
-        reducer: counterReducer,
+        initialState: OrderState(number: 1),
+        reducer: orderReducer,
         environment: ()
     )
 
@@ -327,13 +328,13 @@ func testChangeToNegativeByButton() {
 }
 ```
 
-This approach are widely used because you can still use the environment.
+This approach is more common to use because you can still use the environment.
 
 The last approach is by creating a function inside the State itself.
 
 3. State function ✅
 ```swift
-struct CounterState {
+struct OrderState {
     // ..
 
     mutating func validateNumber() {
@@ -345,10 +346,10 @@ struct CounterState {
 state.validateNumber()
 ```
 
-By using this style, you can call it on other place that uses this State (for example if you need to call it on other reducers), but you can't use environment (if you need to you can still pass it as the function argument).
+By using this style, you can call it on other place that uses this State (for example, if you need to call it on other reducers), but you can't use environment (You can still pass it as the function argument actually).
 
 ## Environment
-Lets go to the next topic, Environment. This is the entry point to the outside world and how to control the world for mocking and unit testing. Usually we put all things that we can't control in the Environment.
+Lets go to the next topic, Environment. It is the entry point to the outside world and how to control the world for mocking and unit testing. Usually we put all things that we can't control in the Environment.
 
 ```swift
 struct DemoEnvironment {
@@ -356,7 +357,7 @@ struct DemoEnvironment {
 }
 ```
 
-The use cases of Environment is very wide coverage. From network request, apple system framework such as getting the state of user notification permission, and even `Date`. 
+The use cases of Environment is very broad. From network request, apple system framework such as getting the state of user notification permission, and even `Date`. 
 
 Lets open `DemoEnvironmentVC+Reducer.swift` file and see whats inside.
 
@@ -395,7 +396,7 @@ Let see the property 1 by 1:
 3. `date`: Maybe you ask, why need to put the Date in the environment? If you see the previous description of Environment, "we put all that we can't control", Date is the same, everytime you run `Date()`, it will generate different timestamp.
 4. `uuid`: Same with date.
 
-There are 2 types of Environment, which is direct (date, uuid) and non direct using Effect (loadData, trackEvent).
+There are two types of Environment, which is direct (date, uuid) and non direct using Effect (loadData, trackEvent).
 
 When using direct, you can just called it like regular function, e.g:
 ```swift
@@ -515,10 +516,10 @@ The unit test and failing effect save you from unintended tracker that can cause
 
 To better understand of using the Environment, let's do some exercise. We will add a create button, that will act as submitting order to the server, the server will return simple `Bool`, when success show the Toast, if failed, show the errorMessage.
 
-First, let add the `CounterEnvironment`
+First, let add the `OrderEnvironment`
 
 ```swift
-struct CounterEnvironment {
+struct OrderEnvironment {
     var submitOrder: (Int) -> Effect<Bool>
 }
 ```
@@ -544,7 +545,7 @@ static let mockFailed = Self(
 
 Then to show toast, we add new property in the state.
 ```swift
-struct CounterState: Equatable {
+struct OrderState: Equatable {
     // ...
     var successToastMessage: String?
 }
@@ -552,7 +553,7 @@ struct CounterState: Equatable {
 
 We need to add action when tapping the button and receiving side effect.
 ```swift
-enum CounterAction {
+enum OrderAction {
     case didTapAddOrder
     case receiveAddOrderResponse(Bool)
 }
@@ -562,7 +563,7 @@ And in the reducer
 ```swift
 case .didTapAddOrder:
     return env.submitOrder(state.number)
-        .map(CounterAction.receiveAddOrderResponse)
+        .map(OrderAction.receiveAddOrderResponse)
 case let .receiveAddOrderResponse(isSuccess):
     if isSuccess {
         state.successToastMessage = "Order created successfully"
@@ -639,7 +640,7 @@ It still emitting the value once (please ignore the `nil`). So the problem is no
 
 Lets try to adding `.debug()` at the end of our reducer.
 ```swift
-let counterReducer = Reducer<CounterState, CounterAction, Void> { 
+let orderReducer = Reducer<OrderState, OrderAction, Void> { 
     // ...
 }.debug()
 ```
@@ -647,18 +648,18 @@ let counterReducer = Reducer<CounterState, CounterAction, Void> {
 In the log you can see all the action send and the state that changed to the reducer 
 ```
 received action:
-  CounterAction.didTapAddOrder
+  OrderAction.didTapAddOrder
   (No state changes)
 
 received action:
-  CounterAction.didTapAddOrder
+  OrderAction.didTapAddOrder
   (No state changes)
 
 received action:
-  CounterAction.receiveAddOrderResponse(
+  OrderAction.receiveAddOrderResponse(
     true
   )
-  CounterState(
+  OrderState(
     number: 2,
     errorMessage: nil,
 −   successToastMessage: nil
@@ -666,7 +667,7 @@ received action:
   )
 
 received action:
-  CounterAction.receiveAddOrderResponse(
+  OrderAction.receiveAddOrderResponse(
     true
   )
   (No state changes)
@@ -751,7 +752,7 @@ Rerun the example, and it fixed the problem.
 The last option, because the Toast is not depend to our UI, we can move the toast implementation into the Environment.
 
 ```swift
-struct CounterEnvironment {
+struct OrderEnvironment {
     var submitOrder: (Int) -> Effect<Bool>
     var showToast: (String) -> Effect<Never>
 }
@@ -780,3 +781,209 @@ When using this approach, maybe you can think the Toast as our dependency, we do
 The environment approach can't or will be difficult to be used if the Toast need reference to the UI (such as positioning the toast above X node).
 
 I suggest you guys to use the environment as the first option when you are getting this problem.
+
+Next, we will add the unit test for add order case.
+```swift
+func testSubmitOrderSucceed() {
+    let testStore = TestStore(
+        initialState: OrderState(number: 1),
+        reducer: orderReducer,
+        environment: .failing
+    )
+
+    var toastSink: [String] = []
+
+    testStore.environment.submitOrder = { _ in
+        Effect(value: true)
+    }
+
+    testStore.environment.showToast = { message in
+        .fireAndForget {
+            toastSink.append(message)
+        }
+    }
+
+    testStore.send(.didTapAddOrder)
+    testStore.receive(.receiveAddOrderResponse(true))
+    XCTAssertEqual(toastSink, ["Order created successfully"])
+}
+
+func testSubmitOrderFailed() {
+    let testStore = TestStore(
+        initialState: OrderState(number: 1),
+        reducer: orderReducer,
+        environment: .failing
+    )
+
+    testStore.environment.submitOrder = { _ in
+        Effect(value: false)
+    }
+
+    testStore.send(.didTapAddOrder)
+    testStore.receive(.receiveAddOrderResponse(false)) {
+        $0.errorMessage = "Submit Order Failed"
+    }
+}
+```
+
+## Scope 
+Let's move on, we will cover one of the most useful feature in TCA, which is scoping State and Action to child view/node.
+
+We will reuse the `CounterNode` (minus, plus button, and textField) into our next project. But now it's tightly coupled with the ViewController, let's refactor it together.
+
+We will create a new node named `CounterNode`, create corresponding `CounterState` and `CounterAction` and move all the functionality of the counter into those files.
+
+```swift
+struct CounterState: Equatable {
+    var number: Int
+    var errorMessage: String?
+    var isMinusButtonEnabled: Bool { number > 0 }
+}
+
+enum CounterAction: Equatable {
+    case didTapMinus
+    case didTapPlus
+    case textDidChange(String)
+}
+
+final class CounterNode: ASDisplayNode {
+    private let textFieldNode: TextFieldNode = {
+        let node = TextFieldNode(title: "Your Number", shouldResetErrorMessageAfterTyping: false)
+        node.style.width = ASDimensionMakeWithPoints(200)
+        node.keyboardType = .numberPad
+        return node
+    }()
+
+    private let minusBtn = ButtonNode(title: "-")
+    private let plusBtn = ButtonNode(title: "+")
+    
+    private let store: Store<CounterState, CounterAction>
+    init(store: Store<CounterState, CounterAction>) {
+        self.store = store
+        super.init()
+        automaticallyManagesSubnodes = true
+    }
+    
+    override func didLoad() {
+        super.didLoad()
+        minusBtn.rx.tap.asDriverOnErrorJustComplete()
+            .drive(onNext: { [store] in
+                store.send(.didTapMinus)
+            })
+            .disposed(by: rx.disposeBag)
+
+        plusBtn.rx.tap.asDriverOnErrorJustComplete()
+            .drive(onNext: { [store] in
+                store.send(.didTapPlus)
+            })
+            .disposed(by: rx.disposeBag)
+
+        textFieldNode.rx.text
+            .asDriver()
+            .drive(onNext: { [store] text in
+                store.send(.textDidChange(text))
+            })
+            .disposed(by: rx.disposeBag)
+    }
+    
+    override func layoutSpecThatFits(_ constrainedSize: ASSizeRange) -> ASLayoutSpec {
+        let counterStack = ASStackLayoutSpec.horizontal()
+        counterStack.spacing = 8
+        counterStack.children = [self.minusBtn, self.textFieldNode, self.plusBtn]
+        return counterStack
+    }
+}
+```
+
+Then lets refactor the `OrderState`, `OrderAction`, and `orderReducer`.
+
+```swift
+struct OrderState: Equatable {
+    var counterState: CounterState
+}
+
+enum OrderAction: Equatable {
+    case counter(CounterAction)
+    case didTapAddOrder
+    case receiveAddOrderResponse(Bool)
+}
+
+struct OrderEnvironment {
+    var submitOrder: (Int) -> Effect<Bool>
+    var showToast: (String) -> Effect<Never>
+}
+
+let orderReducer = Reducer<OrderState, OrderAction, OrderEnvironment> { state, action, env in
+    func validateNumber() {
+        state.counterState.errorMessage = state.counterState.number < 0 ? "Error, should >= 0" : nil
+    }
+    switch action {
+    case .counter(.didTapMinus):
+        state.counterState.number -= 1
+        validateNumber()
+        return .none
+    case .counter(.didTapPlus):
+        state.counterState.number += 1
+        validateNumber()
+        return .none
+    case let .counter(.textDidChange(string)):
+        if let number = Int(string) {
+            state.counterState.number = number
+            validateNumber()
+            return .none
+        } else {
+            state.counterState.number = 0
+            state.counterState.errorMessage = "Should only contains numeric"
+            return .none
+        }
+    case .didTapAddOrder:
+        return env.submitOrder(state.counterState.number)
+            .map(OrderAction.receiveAddOrderResponse)
+    case let .receiveAddOrderResponse(isSuccess):
+        if isSuccess {
+            return env.showToast("Order created successfully")
+                .fireAndForget()
+        } else {
+            state.counterState.errorMessage = "Submit Order Failed"
+        }
+        return .none
+    }
+}
+```
+
+Then, we remove the plus, minus button, and textField, and we add the `CounterNode` to our `OrderVC`.
+The type of store for CounterNode is `CounterState, CounterAction`, but in our ViewController, it's difference. This is where the `scope` come to play.
+
+Maybe you can think scope as `map` function that the purpose is to transform something from A to B. In Store, it can transform 2 things, the State and the Action.
+
+Let's start with how to transform the State, we want to transform `OrderState` to `CounterState` 
+
+```swift
+let newStore = store.scope(state: { state in
+    state.counterState
+})
+```
+
+Command+Click the `newStore` variable will show the type of the newStore: `Store<CounterState, OrderAction>`.
+
+You can simplify the code using Swift `KeyPath`:
+```swift
+let newStore = store.scope(state: \.counterState)
+```
+
+Transforming the State is complete. Lets do the last part, transforming the Action from `OrderAction` to `CounterAction`
+
+```swift
+let newStore = store.scope(
+    state: \.counterState,
+    action: { smallAction in
+        OrderAction.counter(smallAction)
+    }
+)
+```
+
+Transforming action is quite different. It is just the reverse of transforming the State. On State, you are giving something in (giving `CounterState` from `OrderVC` into `CounterNode`).
+
+```swift
+private lazy var counterNode = CounterNode(store: Store<CounterState, CounterAction>)
+```

@@ -1,5 +1,5 @@
 //
-//  CounterVC.swift
+//  OrderVC.swift
 //  _idx_TCABootcamp_46CB3511_ios_min12.0
 //
 //  Created by jefferson.setiawan on 16/06/22.
@@ -9,20 +9,20 @@ import AsyncDisplayKit
 import RxComposableArchitecture
 import SharedUI
 
-internal final class CounterVC: ASDKViewController<ASDisplayNode> {
+internal final class OrderVC: ASDKViewController<ASDisplayNode> {
     private let textFieldNode: TextFieldNode = {
-        let node = TextFieldNode(title: "Your Number")
-        node.isEnabled = false
+        let node = TextFieldNode(title: "Your Number", shouldResetErrorMessageAfterTyping: false)
         node.style.width = ASDimensionMakeWithPoints(200)
         return node
     }()
 
     private let minusBtn = ButtonNode(title: "-")
     private let plusBtn = ButtonNode(title: "+")
+    private let addOrderBtn = ButtonNode(title: "Add Order")
 
-    private let store: Store<CounterState, CounterAction>
+    private let store: Store<OrderState, OrderAction>
 
-    internal init(store: Store<CounterState, CounterAction>) {
+    internal init(store: Store<OrderState, OrderAction>) {
         self.store = store
         super.init(node: ASDisplayNode())
         node.backgroundColor = .baseWhite
@@ -33,7 +33,10 @@ internal final class CounterVC: ASDKViewController<ASDisplayNode> {
             let counterStack = ASStackLayoutSpec.horizontal()
             counterStack.spacing = 8
             counterStack.children = [self.minusBtn, self.textFieldNode, self.plusBtn]
-            return ASCenterLayoutSpec(centeringOptions: .XY, sizingOptions: .minimumXY, child: counterStack)
+            let mainStack = ASStackLayoutSpec.vertical()
+            mainStack.spacing = 8
+            mainStack.children = [counterStack, self.addOrderBtn]
+            return ASCenterLayoutSpec(centeringOptions: .XY, sizingOptions: .minimumXY, child: mainStack)
         }
         bindState()
     }
@@ -55,17 +58,34 @@ internal final class CounterVC: ASDKViewController<ASDisplayNode> {
                 store.send(.didTapPlus)
             })
             .disposed(by: rx.disposeBag)
+
+        textFieldNode.rx.text
+            .asDriver()
+            .drive(onNext: { [store] text in
+                store.send(.textDidChange(text))
+            })
+            .disposed(by: rx.disposeBag)
+
+        addOrderBtn.rx.tap
+            .asDriver()
+            .drive(onNext: { [store] in
+                store.send(.didTapAddOrder)
+            })
+            .disposed(by: rx.disposeBag)
     }
 
     private func bindState() {
         store.subscribe(\.number)
-            .subscribe(onNext: { [textFieldNode] text in
-                textFieldNode.text = String(text)
-            })
+            .map(String.init)
+            .subscribe(textFieldNode.rx.text)
             .disposed(by: rx.disposeBag)
-        
+
         store.subscribe(\.isMinusButtonEnabled)
             .subscribe(minusBtn.rx.isEnabled)
+            .disposed(by: rx.disposeBag)
+
+        store.subscribe(\.errorMessage)
+            .subscribe(textFieldNode.rx.errorMessage)
             .disposed(by: rx.disposeBag)
     }
 

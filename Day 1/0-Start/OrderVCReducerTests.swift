@@ -1,5 +1,5 @@
 //
-//  CounterVCReducerTests.swift
+//  OrderVCReducerTests.swift
 //  TCABootcampTests
 //
 //  Created by module_generator on 16/06/22.
@@ -12,5 +12,4 @@ import XCTest
 
 @testable import TCABootcamp
 
-internal final class CounterVCReducerTests: XCTestCase {
-}
+internal final class OrderVCReducerTests: XCTestCase {}
