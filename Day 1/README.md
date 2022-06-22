@@ -34,9 +34,9 @@ There are 2 ways to do achieve the requirement.
 
 The first one is by adding a new property in the State:
 ```swift
-internal struct CounterState: Equatable {
-    internal var number: Int
-    internal var isMinusButtonEnabled: Bool = false
+struct CounterState: Equatable {
+    var number: Int
+    var isMinusButtonEnabled: Bool = false
 }
 ```
 In the reducer, we add a new check when user tap the minus button:
@@ -61,9 +61,9 @@ Can someone give idea to fix this issue? 🙋🏻‍♂️
 
 To fix this we can use custom initialization on the `CounterState`:
 ```swift
-internal struct CounterState: Equatable {
-    internal var number: Int
-    internal var isMinusButtonEnabled: Bool
+struct CounterState: Equatable {
+    var number: Int
+    var isMinusButtonEnabled: Bool
 
     init(number: Int) {
     	self.number = number
@@ -75,7 +75,7 @@ internal struct CounterState: Equatable {
 The bug is gone 😃, but maybe some of you will think, this is not a DRY(don't repeat yourself), we repeat the `isMinusButtonEnabled = state.number > 0` 3 times!
 You can refactor it to a function or maybe use `didSet` to watch whenever the `number` is changed. 
 ```swift
-internal var number: Int {
+var number: Int {
     didSet {
         isMinusButtonEnabled = number > 0
     }
@@ -84,13 +84,13 @@ internal var number: Int {
 
 But remember, the `didSet` will NOT get called on initialization. so you need to do the check when in first init.
 ```swift
-internal struct CounterState: Equatable {
-    internal var number: Int {
+struct CounterState: Equatable {
+    var number: Int {
         didSet {
             setMinusEnabledStatus()
         }
     }
-    internal var isMinusButtonEnabled: Bool = false
+    var isMinusButtonEnabled: Bool = false
 
     init(number: Int) {
         self.number = number
@@ -105,9 +105,9 @@ internal struct CounterState: Equatable {
 
 The other approach is by leveraging the swift computed property 👍🏻
 ```swift
-internal struct CounterState: Equatable {
-    internal var number: Int
-    internal var isMinusButtonEnabled: Bool { number > 0 }
+struct CounterState: Equatable {
+    var number: Int
+    var isMinusButtonEnabled: Bool { number > 0 }
 }
 ```
 By using computed property, there is no repeatition on the code. Usually we used computed property in TCA only if the property is just derived from the other property (in this case the enabled/disabled status is derived from the `number` property).
@@ -118,7 +118,7 @@ Why???
 This is because computed properties are get only property, so you can't set into it. For example like this:
 
 ```swift
-internal func testTapPlus() {
+func testTapPlus() {
     // let testStore = ...
     
     testStore.send(.didTapPlus) {
@@ -143,7 +143,7 @@ But that could be repetitive, for example when you tapMinus, to make sure that t
 
 The better way to test this, is by testing the plain state without involving the TCA.
 ```swift
-internal func testEnabledMinusButton() {
+func testEnabledMinusButton() {
     var state = CounterState(number: 1)
     
     XCTAssertTrue(state.isMinusButtonEnabled)
@@ -256,7 +256,7 @@ let counterReducer = Reducer<CounterState, CounterAction, Void> { state, action,
 
 There is no more repeatition, next, lets fix the unit test.
 ```swift
-internal func testTapPlus() {
+func testTapPlus() {
     let testStore = TestStore(
         initialState: CounterState(number: 1),
         reducer: counterReducer,
@@ -270,7 +270,7 @@ internal func testTapPlus() {
     testStore.receive(.checkNumber)
 }
 
-internal func testChangeTextToNonNumeric() {
+func testChangeTextToNonNumeric() {
     let testStore = TestStore(
         initialState: CounterState(number: 1),
         reducer: counterReducer,
@@ -309,7 +309,7 @@ The refactor is still the same, you only need to call the function, but there is
 So our test will be more straightforward, you can remove all the `checkNumber` side effects.
 
 ```swift
-internal func testChangeToNegativeByButton() {
+func testChangeToNegativeByButton() {
     let testStore = TestStore(
         initialState: CounterState(number: 1),
         reducer: counterReducer,
@@ -347,65 +347,334 @@ state.validateNumber()
 
 By using this style, you can call it on other place that uses this State (for example if you need to call it on other reducers), but you can't use environment (if you need to you can still pass it as the function argument).
 
-We have another problem that not exists in MVVM (hint: this is related to the distinctUntilChanged in TCA).
+## Environment
+Lets go to the next topic, Environment. This is the entry point to the outside world and how to control the world for mocking and unit testing. Usually we put all things that we can't control in the Environment.
 
-To demonstrate the problem, let change the text using non numeric character (such as `a`), then the reducer will change the number into `0` and it's reflected into the UI.
+```swift
+struct DemoEnvironment {
+    var loadData: () -> Effect<Result<Int, NetworkError>>
+}
+```
 
-Let's change it again into non numeric character, the state still `0`, but the UI will change to `0a`
+The use cases of Environment is very wide coverage. From network request, apple system framework such as getting the state of user notification permission, and even `Date`. 
+
+Lets open `DemoEnvironmentVC+Reducer.swift` file and see whats inside.
+
+```swift
+struct DemoEnvironment {
+    var loadData: () -> Effect<Result<Int, CustomError>>
+    var trackEvent: (String) -> Effect<Never>
+    var date: () -> Date
+    var uuid: () -> UUID
+}
+```
+
+You can initialize the Environment using static var.
+```swift
+extension DemoEnvironment {
+    static let live = Self(
+        loadData: {
+            Observable.just(Result.success(Int.random(in: 0 ... 10000)))
+                .delay(.milliseconds(500), scheduler: MainScheduler.instance)
+                .eraseToEffect()
+        },
+        trackEvent: { event in
+            .fireAndForget {
+                print("TrackEvent \(event)")
+            }
+        },
+        date: Date.init,
+        uuid: UUID.init
+    )
+}
+```
+
+Let see the property 1 by 1:
+1. `loadData`: it's a network request to the server that will return a random number, we need to put it into the environment so we can freely change the result both in the development and unit test.
+2. `trackEvent`: It's better to not to track when unit testing.
+3. `date`: Maybe you ask, why need to put the Date in the environment? If you see the previous description of Environment, "we put all that we can't control", Date is the same, everytime you run `Date()`, it will generate different timestamp.
+4. `uuid`: Same with date.
+
+There are 2 types of Environment, which is direct (date, uuid) and non direct using Effect (loadData, trackEvent).
+
+When using direct, you can just called it like regular function, e.g:
+```swift
+env.date()
+env.uuid()
+```
+
+When using non-direct env, you need to uses it as the return value of the reducer. e.g:
+
+```swift
+enum Action {
+    case didLoad
+    case receiveData(Result<Int, CustomError>)
+}
+
+// Reducer
+case .didLoad:
+    env.loadData()
+    .map(Action.receiveData) // or .map { Action.receiveData($0) }
+```
+
+If you don't care of return value of the environment (like `trackEvent`), you can use `.fireAndForget()` helper.
+
+```swift
+case .didTapSubmit:
+    return env.trackEvent("didSubmit")
+        .fireAndForget()
+```
+
+When you put all the outside world/code that you can't control in the Environment, you can mock it as you wish both during development or testing.
+For example, in the test, I want to make sure the Date will always be June 22nd, 2022. you can do that:
+
+```swift
+static var mockAlways22June = DemoEnvironment(
+    // ...
+    date: { Date("22 june 2022") }
+    // ...
+)
+```
+
+and you can plug it when initiatae the `Store`
+
+```swift
+let store = Store(
+    initialState: EnvironmentState(), 
+    reducer: environmentReducer,
+    environment: .mockAlways22June
+)
+```
+
+### Unit Testing the Environment
+For the environment, it's recommended to use `.failing` as your base for unit testing
+
+```swift
+extension DemoEnvironment {
+    static var failing = Self(
+        loadData: { Effect.failing("loadData should not called") },
+        trackEvent: { _ in Effect.failing("trackEvent Should not be called") },
+        date: {
+            XCTFail("date Should not be called")
+            return Date()
+        },
+        uuid: {
+            XCTFail("date Should not be called")
+            return UUID()
+        }
+    )
+}
+```
+
+The reason is if you call the environment accidentally in the reducer, the test will failed to alert you that you are calling environment without assert it in the test. For example, when tap the generate UUID button, it will generate the UUID, the test will look like this:
+
+```swift
+func testGenerateUUID() {
+    let store = TestStore(
+        initialState: EnvironmentState(),
+        reducer: environmentReducer,
+        environment: .failing
+    )
+    store.environment.uuid = UUID.incrementing
+    store.send(.generateUUID) {
+        $0.uuidString = "00000000-0000-0000-0000-000000000000"
+    }
+    store.send(.generateUUID) {
+        $0.uuidString = "00000000-0000-0000-0000-000000000001"
+    }
+}
+```
+
+if you forget to implement the environment.uuid, the test will fail 
+```
+❌ failed - uuid should not be called
+```
+
+That alert is good, so you know the reducer will call the `env.uuid`. If you implement the uuid, the test will succeed.
+
+Lets go to another case, when the failing will help you.
+Let said someone accidentally copy paste the tracker code into the generateUUID action
+
+```swift
+// Reducer, copy paste from generateDate, with modification in the state modification and forget to remove the tracker
+case .generateUUID:
+    state.uuidString = env.uuid().uuidString
+    return env.trackEvent("getCurrentDate").fireAndForget()
+```
+
+When the previous test is runned again, the test will fail.
+```
+❌ trackEvent Should not be called - A failing effect ran.
+```
+
+The unit test and failing effect save you from unintended tracker that can caused invalid data to analyze 😇
+
+
+### Exercise 3: Adding Order
+![Add Order](Assets/3-add_order.gif "Add Order")
+
+To better understand of using the Environment, let's do some exercise. We will add a create button, that will act as submitting order to the server, the server will return simple `Bool`, when success show the Toast, if failed, show the errorMessage.
+
+First, let add the `CounterEnvironment`
+
+```swift
+struct CounterEnvironment {
+    var submitOrder: (Int) -> Effect<Bool>
+}
+```
+
+Then add mock implementation of the Environment.
+```swift
+static let mockSuccess = Self(
+    submitOrder: {
+        Effect(value: true)
+            .delay(.seconds(1), scheduler: MainScheduler.instance)
+            .eraseToEffect()
+    }
+}
+
+static let mockFailed = Self(
+    submitOrder: {
+        Effect(value: false)
+            .delay(.seconds(1), scheduler: MainScheduler.instance)
+            .eraseToEffect()
+    }
+}
+```
+
+Then to show toast, we add new property in the state.
+```swift
+struct CounterState: Equatable {
+    // ...
+    var successToastMessage: String?
+}
+```
+
+We need to add action when tapping the button and receiving side effect.
+```swift
+enum CounterAction {
+    case didTapAddOrder
+    case receiveAddOrderResponse(Bool)
+}
+```
+
+And in the reducer
+```swift
+case .didTapAddOrder:
+    return env.submitOrder(state.number)
+        .map(CounterAction.receiveAddOrderResponse)
+case let .receiveAddOrderResponse(isSuccess):
+    if isSuccess {
+        state.successToastMessage = "Order created successfully"
+        return .none
+    } else {
+        state.errorMessage = "Submit Order Failed"
+        return .none
+    }
+```
+
+And update the UI, layout, and binding:
+
+```swift
+private let addOrderBtn = ButtonNode(title: "Add Order")
+node.layoutSpecBlock = {
+    ...
+    let mainStack = ASStackLayoutSpec.vertical()
+    mainStack.spacing = 8
+    mainStack.children = [counterStack, self.addOrderBtn]
+    return ASCenterLayoutSpec(centeringOptions: .XY, sizingOptions: .minimumXY, child: mainStack)
+}
+
+addOrderBtn.rx.tap
+    .asDriver()
+    .drive(onNext: { [store] in
+        store.send(.didTapAddOrder)
+    })
+    .disposed(by: rx.disposeBag)
+
+store.subscribe(\.successToastMessage)
+    .filterNil()
+    .subscribe(onNext: { message in
+        Toast.shared.display(message: message)
+    })
+    .disposed(by: rx.disposeBag)
+```
+
+Run the app, and it work gracefully until you try tap the button twice, and you see only 1 toast shown. (hint: this is related to the `distinctUntilChanged` in TCA).
 
 Why this happen? Let's try to debug it 🛠
-First, we can try add .debug() at the end of our reducer.
+We can try to debug on the closest code that possibly can cause the issue, which is in subscription when showing the Toast. Let's debug in the UI using infamous `print` statement in the subscription of the number state.
+
+```swift
+store.subscribe(\.successToastMessage)
+    .filterNil()
+    .subscribe(onNext: { message in
+        print("<<< \(message)")
+        Toast.shared.display(message: message)
+    })
+    .disposed(by: rx.disposeBag)
+```
+
+Run the app, and it only print once. Maybe something wrong with filterNil?, let's try add RxSwift `.debug` before filterNil. Debug will print anything related to that stream.
+
+```swift
+store.subscribe(\.successToastMessage)
+    .debug("<<<", trimOutput: true)
+    .filterNil()
+    .subscribe(onNext: { message in
+        Toast.shared.display(message: message)
+    })
+    .disposed(by: rx.disposeBag)
+```
+
+Run the example, and filter the log using identifier we provide `<<<`.
+
+```
+2022-06-22 15:57:48.121: <<< -> subscribed
+2022-06-22 15:57:48.124: <<< -> Event next(nil)
+2022-06-22 15:57:52.194: <<< -> Event next(Optional("Order...ated successfully"))
+```
+
+It still emitting the value once (please ignore the `nil`). So the problem is not in the UI, maybe it comes from `subscribe`, but before checking in the third party framework, we can add 1 more check in our reducer, maybe there is an issue on our reducer.
+
+Lets try to adding `.debug()` at the end of our reducer.
 ```swift
 let counterReducer = Reducer<CounterState, CounterAction, Void> { 
+    // ...
 }.debug()
 ```
 
 In the log you can see all the action send and the state that changed to the reducer 
 ```
 received action:
-  CounterAction.textDidChange(
-    "1"
-  )
+  CounterAction.didTapAddOrder
   (No state changes)
 
-// change to a
 received action:
-  CounterAction.textDidChange(
-    "A"
+  CounterAction.didTapAddOrder
+  (No state changes)
+
+received action:
+  CounterAction.receiveAddOrderResponse(
+    true
   )
   CounterState(
-−   number: 1,
-−   errorMessage: nil
-+   number: 0,
-+   errorMessage: "Should only contains numeric"
+    number: 2,
+    errorMessage: nil,
+−   successToastMessage: nil
++   successToastMessage: "Order created successfully"
   )
 
-// type another 'a'
 received action:
-  CounterAction.textDidChange(
-    "0a"
+  CounterAction.receiveAddOrderResponse(
+    true
   )
   (No state changes)
-
 ```
 
-Seeing the xcode console log, the second time we type `a`, the `State` is still the same like previous, why the text field have different value 🤔? Ok, let's debug in the UI using infamous `print` statement in the subscription of the number state.
+From the Xcode console log, we get 2 `receiveAddOrderResponse`, why the toast only shown once 🤔? 
 
-```swift
-store.subscribe(\.number)
-    .subscribe(onNext: { [textFieldNode] text in
-        print("<<< \(number)")
-        textFieldNode.text = String(text)
-    })
-    .disposed(by: rx.disposeBag)
-```
-Let's run the app again, and replicate the steps
-```
-<<< 1 // when open the page
-<<< 0 // type 'a'
-```
-
-We only see 2 value being emitted which you might thing this is strange. 
+We only see 1 value being emitted which you might thing this is strange. 
 
 Don't worry, we will explain why this happen. 
 Let's deep dive about how the TCA subscription works compare to our MVVM.
@@ -415,29 +684,99 @@ Let's deep dive about how the TCA subscription works compare to our MVVM.
 In MVVM, each output has its own Observable, so everytime you send (onNext) on it, it will produce new stream.
 
 ![TCA Stream Flow](Assets/tca.gif "TCA Stream Flow")
+
 On contrary, TCA has 1 single Observable which is the `State`. So it needs to do the distinct (using `distinctUntilChanged`) so it will emit new value when it's not equal.
 
 That's explains why when the value is still the same, the subscription will not emit new `onNext` value.
 
 Maybe some of you still questioning, why TCA need the distinction.
 I'll create example flow in case we don't use distinct in the TCA subscription.
+
 ![TCA Stream with No Distinct Flow](Assets/tca_non_distinct.gif "TCA Stream with No Distinct Flow")
 
 As you can see, everytime the State change, it will emit to all the part of the subscription, eventhough we don't touch the property in the reducer. It causes unnecessary subscription emit and run.
 
 As we approaching the Declarative UI, this is what we need to think, as State will be our source of truth, then if the value is same, we'll not do anything.
 
-The problem arise because we are using the UIKit/Texture that are still imperative, the `TextFieldNode` still have it's own state. Our state is `0`, but TextField state is `0a`. This problem will not arise when you are using declarative framework UI such as SwiftUI or other declarative UI (such as Vue, Redux).
+The problem arise because we are using the UIKit/Texture that are still imperative. There is some ways to fix this problem:
 
-Fortunately, this is rarely happen, and we found an idea to cater this problem, using brand new `NeverEqual` property wrapper.
+First option: we reset the state after we set it (this is what devs usually do until now)
 
-## NeverEqual
-NeverEqual is created to cater the problem above.
+```swift
+case let .receiveAddOrderResponse(isSuccess):
+        if isSuccess {
+            state.successToastMessage = "Order created successfully"
+            return Effect(value: .dismissToast)
+        } else {
+            state.errorMessage = "Submit Order Failed"
+            return .none
+        }
+    }
+case .dismissToast:
+    state.successToastMessage = nil
+    return .none
+```
 
+or we add new callback to support TCA declarative syntax in the Toast.
 
+```swift
+Toast.shared.display(message: message, onDismiss: {
+    store.send(.dismissToast)
+})
+```
 
-## Environment
+Using this sometimes can be cumbersome, you need to do this manually just to reset the state.
 
+Second option: Use `NeverEqual` Property Wrapper
+`NeverEqual` is created to cater the problem above. Behind the scene, everytime you set to new value, whether it's same or not, internally it will increment the number so it'll not equal.
 
-### Exercise 3: Add Create Order Button
-// TODO
+Let's change the number state to use NeverEqual property wrapper.
+
+```swift
+@NeverEqual var successToastMessage: String?
+```
+
+and change the subscription using `subscribeNeverEqual`:
+```swift
+store.subscribeNeverEqual(\.$successToastMessage)
+    .subscribe(onNext: ...)
+```
+
+Using `NeverEqual`, there is no need to reset the state just to avoid the value is not being emit because it has the same value.
+
+Rerun the example, and it fixed the problem. 
+
+⚠️ Remember, this property wrapper should rarely being used, you can discuss with other members/PE to decide whenever your case is suite to use NeverEqual or can uses another approach ⚠️
+
+The last option, because the Toast is not depend to our UI, we can move the toast implementation into the Environment.
+
+```swift
+struct CounterEnvironment {
+    var submitOrder: (Int) -> Effect<Bool>
+    var showToast: (String) -> Effect<Never>
+}
+
+static let mockSuccess = Self(
+    // ...
+    showToast: { message in
+        .fireAndForget {
+            Toast.shared.display(message: message)
+        }
+    }
+)
+```
+
+When success creating order you can call it like this:
+```swift
+case let .receiveAddOrderResponse(isSuccess):
+    if isSuccess {
+        return env.showToast("Order created successfully")
+            .fireAndForget()
+    }
+```
+
+When using this approach, maybe you can think the Toast as our dependency, we don't create the toast, we only using it.
+
+The environment approach can't or will be difficult to be used if the Toast need reference to the UI (such as positioning the toast above X node).
+
+I suggest you guys to use the environment as the first option when you are getting this problem.
