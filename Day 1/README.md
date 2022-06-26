@@ -447,6 +447,8 @@ let store = Store(
 )
 ```
 
+The convention to mock is always prefix the var with `mock`, so the developers can get to know all mock that availables in the Environment/model just by typing `.mock`, and xcode will help to autocomplete all available mocks.
+
 ### Unit Testing the Environment
 For the environment, it's recommended to use `.failing` as your base for unit testing
 
@@ -1030,11 +1032,250 @@ let newStore = store.scope(
 )
 ```
 
-Final code:
+Final code for the `counterNode`:
 
 ```swift
 private lazy var counterNode = CounterNode(store: store.scope(
     state: \.counterState,
     action: OrderAction.counter
 ))
+```
+
+### Exercise 4: Product Info Section
+Please checkout to the branch `bootcamptca/scope-exercise-start`.
+
+Lets add more information to our screen.
+
+![Product Info](Assets/4-scope_exercise.png "Product Info")
+
+ProductState static
+```swift
+var productState: ProductState = ProductState(id: 1, name: "iPhone 13", price: 10_000_000)
+```
+
+Open the `OrderProductNode`, please try to convert it to use Store. 
+Then, add the `ProductState` as the property of `OrderState`
+```swift
+var productState = ProductState(id: 1, name: "iPhone 13", price: 10_000_000)
+```
+
+When the Store of a node doesn't have actions, you can use `Never` as its type.
+
+Let's make it more dynamic as if it comes from the server. The data is requested when user open the page (`viewDidLoad`).
+
+Firstly for minor change, we give the product state default value:
+
+```swift
+var productState: ProductState = ProductState(id: 0, name: "", price: 0)
+```
+
+Then on the action, add 2 new enum, new property in environment, and connect it all in the reducer:
+```swift
+// action
+case didLoad
+case receiveProductInfo(Result<ProductInfo, NetworkError>)
+
+// OrderEnvironment
+var getProductInfo: () -> Effect<Result<ProductInfo, NetworkError>>
+
+// Reducer
+case .didLoad:
+    return env.getProductInfo()
+        .map(OrderAction.receiveProductInfo)
+case let .receiveProductInfo(result):
+    switch result {
+    case let .success(info):
+        state.productState = ProductState(id: info.id, name: info.name, price: info.price)
+    case let .failure(error):
+        break
+    }
+    return .none
+
+```
+
+### IfLet Introduction
+
+Branch: `bootcamptca/iflet-start`
+Some of you think of using default value for the productState before you get the real value from the server. There are some disadvantage on using that style, as you might have difficulty how to differentiate between default value from open the page or it is the real value which have the same value as the default one. The other one is you need to keep creating default value whenever your model size (huge/small).
+
+The better way to overcome this issue by make the `productNode` optional, and only initiate it when you get it to non optional.
+
+let's change the productNode type to be optional
+```swift
+private var productNode: CardNode?
+```
+
+and change the state to 
+```swift
+var productState: ProductState?
+```
+
+After the backend response arrive and it success, we will set the value, and we scope it in the `bindState` method.
+```swift
+self?.productNode = CardNode(wrappedNode: OrderProductNode(store: store.scope(state: \.productState).actionless))
+```
+
+The above code will show error:
+```
+Cannot convert value of type 'Store<ProductState?, Never>' to expected argument type 'Store<ProductState, Never>''
+```
+
+The state is not match! The `OrderProductNode` need `ProductState`, but our state is `ProductState?`. But don't worry, this can be fixed by using the helper `ifLet`.
+
+`ifLet` as you can guess, will convert the optional State in the reducer to non optional if it is there.
+
+```swift
+store.scope(state: \.productState).actionless
+    .ifLet(
+        then: { [weak self] scopedStore in
+            self?.productNode = CardNode(wrappedNode: OrderProductNode(store: scopedStore))
+            self?.node.setNeedsLayout()
+        },
+        else: { [weak self] in
+            self?.productNode = nil
+            self?.node.setNeedsLayout()
+        })
+    .disposed(by: rx.disposeBag)
+```
+
+To create better UX for the user, we will adding loading and error user interface to indicate respective UI state. Add errorNode and loadingNode property into the `OrderVC` class.
+
+```swift
+private var errorNode: EmptyStateNode?
+private let loadingNode = CircularActivityIndicatorNode()
+```
+
+Next, add isLoading and networkError into the State
+```swift
+struct OrderState: Equatable {
+    var isLoading = true
+    var productState: ProductState?
+    var counterState: CounterState
+    var networkError: NetworkError?
+}
+```
+
+In the reducer, we flag the isLoading to false when we get the result (`receiveProductInfo`).
+```swift
+state.isLoading = false
+switch result {
+case let .success(info):
+    state.productState = ProductState(id: info.id, name: info.name, price: info.price)
+case let .failure(error):
+    state.networkError = error
+}
+```
+
+Lastly, we'll adjust the UI.
+```swift
+node.layoutSpecBlock = { [weak self] _, _ in
+    guard let self = self else { return ASLayoutSpec() }
+    if store.state.isLoading {
+        return ASCenterLayoutSpec(centeringOptions: .XY, sizingOptions: .minimumXY, child: self.loadingNode)
+    }
+    if let errorNode = self.errorNode {
+        return ASCenterLayoutSpec(centeringOptions: .XY, sizingOptions: .minimumXY, child: errorNode)
+    }
+    if let productNode = self.productNode {
+        let mainStack = ASStackLayoutSpec.vertical()
+        mainStack.spacing = 8
+        mainStack.children = [productNode, self.counterNode, self.addOrderBtn]
+        return ASCenterLayoutSpec(centeringOptions: .XY, sizingOptions: .minimumXY, child: mainStack)
+    }
+    return ASLayoutSpec()
+}
+
+// ...
+func bindState() {
+    // ...
+    store.subscribe(\.isLoading)
+        .subscribe(onNext: { [weak self] in
+            if $0 {
+                self?.loadingNode.startAnimating()
+            } else {
+                self?.loadingNode.stopAnimating()
+            }
+        })
+        .disposed(by: rx.disposeBag)
+    
+    store.subscribe(\.networkError)
+        .subscribe(onNext: { [weak self] error in
+            if let error = error {
+                self?.errorNode = EmptyStateNode(imageSource:  EmptyStateNode.ImageSource?.some(.image(UIImage(named: error.imageSource))), message: error.message)
+                self?.node.setNeedsLayout()
+            }
+        })
+        .disposed(by: rx.disposeBag)
+}
+```
+
+To test the error case, you can create a new mock that always return error.
+
+```swift
+internal static let mockFailed = Self(
+    getProductInfo: {
+        Effect(value: .failure(.serverError))
+            .delay(.seconds(2), scheduler: MainScheduler.instance)
+            .eraseToEffect()
+    },
+    submitOrder: { _ in
+        Effect(value: false)
+            .delay(.seconds(1), scheduler: MainScheduler.instance)
+            .eraseToEffect()
+    },
+    showToast: { message in
+        .fireAndForget {
+            Toast.shared.display(message: message)
+        }
+    }
+)
+```
+
+### Exercise 5: Show bottom sheet using ifLet
+
+Please checkout to this branch: `bootcamptca/product-info-bottom-sheet`
+
+Our page still lacks of information about what are we ordered. So in this exercise we will add a new functionality to showing more information in a bottom sheet. The bottom sheet will open when user tap the `OrderProductNode`. Let's add a new action on that node, then change the Store signature to uses the new enum.
+
+```swift
+enum OrderProductAction: Equatable {
+    case didTap
+}
+
+
+private let store: Store<ProductState, OrderProductAction>
+```
+
+And add UITapGestureRecognizer to the node.
+```swift
+override func didLoad() {
+    super.didLoad()
+    let tapGesture = UITapGestureRecognizer()
+    tapGesture.rx.event
+        .asDriver()
+        .drive(onNext: { [store] _ in
+            store.send(.didTap)
+        })
+        .disposed(by: rx.disposeBag)
+    view.addGestureRecognizer(tapGesture)
+}
+```
+
+```swift
+
+```
+
+
+Show product name, price, and description.
+Show 3 ways of creating bottomSheet.
+- ifLet
+- subscribe when no need store
+- environment
+
+### Exercise 6: Adding wishlist in the bottom sheet
+
+Next, add an action to the bottom sheet to wishlist the product, we will only toggle the `isWishlist` status when it tapped.
+
+```swift
+
 ```
