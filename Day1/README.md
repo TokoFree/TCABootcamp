@@ -722,13 +722,12 @@ First option: we reset the state after we set it (this is what devs usually do u
 
 ```swift
 case let .receiveAddOrderResponse(isSuccess):
-        if isSuccess {
-            state.successToastMessage = "Order created successfully"
-            return Effect(value: .dismissToast)
-        } else {
-            state.errorMessage = "Submit Order Failed"
-            return .none
-        }
+    if isSuccess {
+        state.successToastMessage = "Order created successfully"
+        return Effect(value: .dismissToast)
+    } else {
+        state.errorMessage = "Submit Order Failed"
+        return .none
     }
 case .dismissToast:
     state.successToastMessage = nil
@@ -1111,11 +1110,12 @@ case let .receiveProductInfo(result):
 ## IfLet Introduction
 
 Branch: `bootcamptca/iflet-start`
+
 Some of you think of using default value for the productState before you get the real value from the server. There are some disadvantage on using that style, as you might have difficulty how to differentiate between default value from open the page or it is the real value which have the same value as the default one. The other one is you need to keep creating default value whenever your model size (huge/small).
 
 The better way to overcome this issue by make the `productNode` optional, and only initiate it when you get it to non optional.
 
-let's change the productNode type to be optional
+Let's change the productNode type to be optional
 ```swift
 private var productNode: CardNode?
 ```
@@ -1288,8 +1288,9 @@ struct ProductState: Equatable {
 ```
 
 There are several ways of implementing bottom sheet in TCA:
-- ifLet
-To use ifLet
+### 1. ifLet
+
+The code is similar like in the `OrderProductNode`.
 ```swift
 struct OrderState: Equatable {
     // ...
@@ -1344,7 +1345,7 @@ self?.navigationController?.present(
 ```
 Rerun the app and the problem will be fixed.
 
-- store.subscribe
+### 2. store.subscribe
 The second method is using usual subscribe method.
 
 This method is usually used when:
@@ -1368,7 +1369,7 @@ store.subscribe(\.bottomSheetState)
 ```
 Both store.ifLet and store.subscribe need to reset the state when it is dismissed.
 
-- Environment
+### 3. Environment
 This is similar with what we did on showing toast in the exercise 3. The benefit of this is you don't need to reset the state when dismissing.
 
 Each method has its own benefit, so you can choose based on what you need.
