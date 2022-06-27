@@ -1248,7 +1248,7 @@ static let mockFailed = Self(
 
 ## Exercise 5: Show bottom sheet using ifLet
 
-![Product Detail Bottom Sheet](Assets/7-bottomsheet.png "Product Detail Bottom Sheet")
+<img src="Assets/7-bottomsheet.png" width="200" alt="Product Detail Bottom Sheet"/>
 
 Please checkout to this branch: `bootcamptca/product-info-bottom-sheet`
 
@@ -1400,7 +1400,7 @@ Because our next exercise will introduce the action that will being handled by t
 
 ## Exercise 6: Adding wishlist in the bottom sheet
 
-![Wishlist button](Assets/8-bottomsheet_wishlist.png)
+<img src="Assets/8-bottomsheet_wishlist.png" width="200" alt="Wishlist button"/>
 
 Please checkout to the branch: `bootcamptca/product-info-wishlist`
 Last exercise, we will add an action to the bottom sheet to wishlist the product, we will only toggle the `isWishlist` status when it is tapped.
