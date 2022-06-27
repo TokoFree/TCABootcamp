@@ -1,20 +1,35 @@
-# Day 1: The basics: State, Action, Side Effect, Environment
+# Day 1: State, Action, Side Effect, Environment
 
-Pre-Bootcamp
-Please checkout to this branch: `bootcamp`
-
-Generate project: 
-```
-tools/tulsi_generate.sh ios/TCABootcamp/TCABootcampExample ios/TCABootcamp/TCABootcampTests
-```
+# Table of Contents
+1. [Overview](#overview)
+2. [Quantity Editor for Order](#quantity-editor-for-order)
+3. [Exercise 1: Disable on Minus Button](#exercise-1-disable-on-minus-button)
+4. [Exercise 2: Enable Text Input & Add Error Message](#exercise-2-enable-text-input--add-error-message)
+5. [Environment](#environment)
+6. [Unit Testing the Environment](#unit-testing-the-environment)
+7. [Exercise 3: Adding Order](#exercise-3-adding-order)
+8. [Scope](#scope)
+9. [Exercise 4: Product Info Section](#exercise-4-product-info-section)
+10. [IfLet Introduction](#iflet-introduction)
+11. [Exercise 5: Show bottom sheet using ifLet](#exercise-5-show-bottom-sheet-using-iflet)
+12. [Exercise 6: Adding wishlist in the bottom sheet](#exercise-6-adding-wishlist-in-the-bottom-sheet)
 
 ## Overview
 In this lesson, you'll learn how to use:
 - State 
 - Action
 - Side Effect & Environment
+- Scope
+- IfLet
 
 [Slides](https://www.icloud.com/keynote/0e4wY65J0Qlt8s86UX6kKpomw#TCA_Bootcamp)
+
+Please checkout to this branch: `bootcamp`
+
+Generate project: 
+```
+tools/tulsi_generate.sh ios/TCABootcamp/TCABootcampExample ios/TCABootcamp/TCABootcampTests
+```
 
 ## Quantity Editor for Order
 
@@ -25,7 +40,7 @@ VC: `OrderVC.swift`
 
 Reducer: `OrderVC+Reducer.swift`
 
-### Exercise 1: Disable on Minus Button
+## Exercise 1: Disable on Minus Button
 We want to make sure the quantity can't be negative, so at the first run, we will disabled the minus button if the number <= 0.
 
 ![Disable Minus Button](Assets/1-disabled_button.gif "Disable Minus Button")
@@ -66,8 +81,8 @@ struct OrderState: Equatable {
     var isMinusButtonEnabled: Bool
 
     init(number: Int) {
-    	self.number = number
-    	self.isMinusButtonEnabled = number > 0
+        self.number = number
+        self.isMinusButtonEnabled = number > 0
     }
 }
 ```
@@ -160,7 +175,7 @@ There are some cons of computed property which are:
 1. The code can't join the Exhaustive test on TCA TestStore (as it's getter only)
 2. Can only observe the `State`. If the value is derived from other things (e.g. the Environment), you can't use computed property. 
 
-### Exercise 2: Enable Text Input & Add Error Message
+## Exercise 2: Enable Text Input & Add Error Message
 
 ![Add Keyboard input and Error Message](Assets/2-keyboard-input-and-error-message.gif "Add Keyboard input and Error Message")
 
@@ -449,7 +464,7 @@ let store = Store(
 
 The convention to mock is always prefix the var with `mock`, so the developers can get to know all mock that availables in the Environment/model just by typing `.mock`, and xcode will help to autocomplete all available mocks.
 
-### Unit Testing the Environment
+## Unit Testing the Environment
 For the environment, it's recommended to use `.failing` as your base for unit testing
 
 ```swift
@@ -513,7 +528,7 @@ When the previous test is runned again, the test will fail.
 The unit test and failing effect save you from unintended tracker that can caused invalid data to analyze 😇
 
 
-### Exercise 3: Adding Order
+## Exercise 3: Adding Order
 ![Add Order](Assets/3-add_order.gif "Add Order")
 
 To better understand of using the Environment, let's do some exercise. We will add a create button, that will act as submitting order to the server, the server will return simple `Bool`, when success show the Toast, if failed, show the errorMessage.
@@ -1041,7 +1056,7 @@ private lazy var counterNode = CounterNode(store: store.scope(
 ))
 ```
 
-### Exercise 4: Product Info Section
+## Exercise 4: Product Info Section
 Please checkout to the branch `bootcamptca/scope-exercise-start`.
 
 Lets add more information to our screen.
@@ -1093,7 +1108,7 @@ case let .receiveProductInfo(result):
 
 ```
 
-### IfLet Introduction
+## IfLet Introduction
 
 Branch: `bootcamptca/iflet-start`
 Some of you think of using default value for the productState before you get the real value from the server. There are some disadvantage on using that style, as you might have difficulty how to differentiate between default value from open the page or it is the real value which have the same value as the default one. The other one is you need to keep creating default value whenever your model size (huge/small).
@@ -1212,7 +1227,7 @@ func bindState() {
 To test the error case, you can create a new mock that always return error.
 
 ```swift
-internal static let mockFailed = Self(
+static let mockFailed = Self(
     getProductInfo: {
         Effect(value: .failure(.serverError))
             .delay(.seconds(2), scheduler: MainScheduler.instance)
@@ -1231,7 +1246,9 @@ internal static let mockFailed = Self(
 )
 ```
 
-### Exercise 5: Show bottom sheet using ifLet
+## Exercise 5: Show bottom sheet using ifLet
+
+![Product Detail Bottom Sheet](Assets/7-bottomsheet.png "Product Detail Bottom Sheet")
 
 Please checkout to this branch: `bootcamptca/product-info-bottom-sheet`
 
@@ -1246,7 +1263,7 @@ enum OrderProductAction: Equatable {
 private let store: Store<ProductState, OrderProductAction>
 ```
 
-And add UITapGestureRecognizer to the node.
+And add `UITapGestureRecognizer` to the `OrderProductNode` node.
 ```swift
 override func didLoad() {
     super.didLoad()
@@ -1261,21 +1278,236 @@ override func didLoad() {
 }
 ```
 
-```swift
+We need to add new `description` property to the `ProductState` because the bottom sheet need it.
 
+```swift
+struct ProductState: Equatable {
+    // ...
+    var description: String
+}
 ```
 
-
-Show product name, price, and description.
-Show 3 ways of creating bottomSheet.
+There are several ways of implementing bottom sheet in TCA:
 - ifLet
-- subscribe when no need store
-- environment
+To use ifLet
+```swift
+struct OrderState: Equatable {
+    // ...
+    var bottomSheetState: ProductDetailState?
+}
 
-### Exercise 6: Adding wishlist in the bottom sheet
+enum OrderAction {
+    // ...
+    case productInfo(OrderProductAction)
+}
 
-Next, add an action to the bottom sheet to wishlist the product, we will only toggle the `isWishlist` status when it tapped.
+// Reducer
+case .productInfo(.didTap):
+    guard let productState = state.productState else { return .none }
+    state.bottomSheetState = ProductDetailState(name: productState.name, price: productState.price, description: productState.description)
+    return .none
+
+
+// UI
+store.scope(state: \.bottomSheetState).actionless
+    .ifLet(
+        then: { [weak self] scopedStore in
+            let vc = ProductDetailInfoVC(store: scopedStore)
+            self?.navigationController?.present(BottomSheetViewController(wrapping: vc), animated: true)
+        }
+    )
+    .disposed(by: rx.disposeBag)
+```
+
+When running the app, you may notice an issue which is when user open the bottom sheet and close, you can't open the bottom sheet again.
+
+This is the similar problem when we show the toast. To fix this, we need to reset the state when the bottom sheet is closed.
+```swift
+enum OrderAction {
+    // ...
+    case dismissBottomSheet
+}
+
+// Reducer
+case .dismissBottomSheet:
+    state.bottomSheetState = nil
+    return .none
+
+// UI
+self?.navigationController?.present(
+    BottomSheetViewController(wrapping: vc),
+    animated: true,
+    onDismiss: {
+        self?.store.send(.dismissBottomSheet)
+    }
+)
+```
+Rerun the app and the problem will be fixed.
+
+- store.subscribe
+The second method is using usual subscribe method.
+
+This method is usually used when:
+1. The bottom sheet/VC/Node doesn't need the store (it only need plain struct as its parameter). 
+2. Bottom sheet is simple e.g. doesn't have any action / reactive state that can be changed later by the parent.
 
 ```swift
+store.subscribe(\.bottomSheetState)
+    .filterNil()
+    .subscribe(onNext: { state in
+        let vc = ProductDetailInfoVC(state: state)
+        self?.navigationController?.present(
+            BottomSheetViewController(wrapping: vc),
+            animated: true,
+            onDismiss: {
+                self?.store.send(.dismissBottomSheet)
+            }
+        )
+    })
+    .disposed(by: rx.disposeBag)
+```
+Both store.ifLet and store.subscribe need to reset the state when it is dismissed.
 
+- Environment
+This is similar with what we did on showing toast in the exercise 3. The benefit of this is you don't need to reset the state when dismissing.
+
+Each method has its own benefit, so you can choose based on what you need.
+
+Using subscribe and environment, you don't need to know the implementation detail of the bottom sheet (no need to add action, environment, and implement it on bigger reducer).
+
+Benefit of using ifLet, it's more flexible, you can override the implementation detail of the child node/vc.
+
+Last in this exercise, let's add the unit test for our bottom sheet.
+```swift
+func testShowBottomSheet() {
+    let testStore = TestStore(
+        initialState: OrderState(productState: ProductState.mock, counterState: CounterState(number: 1)),
+        reducer: orderReducer,
+        environment: .failing
+    )
+
+    testStore.send(.productInfo(.didTap)) {
+        $0.bottomSheetState = .mock
+    }
+    
+    testStore.send(.dismissBottomSheet) {
+        $0.bottomSheetState = nil
+    }
+}
+```
+
+Because our next exercise will introduce the action that will being handled by the VC, let's stick with `ifLet`.
+
+## Exercise 6: Adding wishlist in the bottom sheet
+
+![Wishlist button](Assets/8-bottomsheet_wishlist.png)
+
+Please checkout to the branch: `bootcamptca/product-info-wishlist`
+Last exercise, we will add an action to the bottom sheet to wishlist the product, we will only toggle the `isWishlist` status when it is tapped.
+
+For this case, let we save the `isWishlist` property inside the `OrderState` (assuming the isWishlist is used in other place e.g: for analytics)
+
+```swift
+struct ProductDetailState: Equatable {
+    // ...
+    var isWishlist: Bool
+}
+
+enum ProductDetailAction: Equatable {
+    case didTapWishlist
+}
+
+// Order
+struct OrderState: Equatable {
+    // ...
+    var isWishlist: Bool
+}
+```
+
+Change the ProductDetailInfoVC's store signature to `Store<ProductDetailState, ProductDetailAction>`
+
+Then add the `ProductDetailAction` in the `OrderAction`.
+
+```swift
+enum OrderAction: Equatable {
+    // ...
+    case bottomSheet(ProductDetailAction)
+}
+
+// reducer
+case .bottomSheet(.didTapWishlist):
+    state.bottomSheetState?.isWishlist.toggle()
+    return .none
+```
+
+The isWishlist state is mutated only on bottomSheet, so whenever we close the bottom sheet and reopen, the isWishlist state is back to its initiate value. To prevent this problem, let's also update the isWishlist inside the `OrderState`:
+
+```swift
+state.isWishlist.toggle()
+state.bottomSheetState?.isWishlist.toggle()
+```
+
+There are some problems regarding that code:
+1. There are two `isWishlist` property (not single source of truth).
+2. You have to remember change both of the properties.
+
+To avoid this problem, we can use some logic inside our state
+
+```swift
+struct OrderState {
+    var showBottomSheet = false
+    var bottomSheetState: ProductDetailState? {
+        guard let productState = productState, showBottomSheet else {
+            return nil
+        }
+        return ProductDetailState(name: productState.name, price: productState.price, description: productState.description, isWishlist: isWishlist)
+    }
+}
+```
+
+When tapping or dismissing the bottomsheet, what we really need is change the flag of `showBottomSheet`
+
+```swift
+case .productInfo(.didTap):
+    guard let productState = state.productState else { return .none }
+    state.showBottomSheet = true
+    return .none
+case .dismissBottomSheet:
+    state.showBottomSheet = false
+    return .none
+case .bottomSheet(.didTapWishlist):
+    state.isWishlist.toggle()
+    return .none
+```
+
+And update the test accordingly
+```swift
+func testShowBottomSheet() {
+    let testStore = TestStore(
+        initialState: OrderState(productState: ProductState.mock, counterState: CounterState(number: 1)),
+        reducer: orderReducer,
+        environment: .failing
+    )
+
+    testStore.send(.productInfo(.didTap)) {
+        $0.showBottomSheet = true
+    }
+
+    testStore.send(.dismissBottomSheet) {
+        $0.showBottomSheet = false
+    }
+}
+
+func testBottomSheetState() {
+    var state = OrderState(counterState: CounterState(number: 0))
+    XCTAssertNil(state.bottomSheetState)
+    
+    /// when there is no productState, bottomSheetState will still be nil eventhough showBottomSheet is `true`
+    state.showBottomSheet = true
+    XCTAssertNil(state.bottomSheetState)
+    
+    state.productState = ProductState.mock
+    
+    XCTAssertEqual(state.bottomSheetState, ProductDetailState.mock)
+}
 ```
