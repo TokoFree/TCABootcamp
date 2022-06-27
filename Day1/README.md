@@ -1061,7 +1061,7 @@ Please checkout to the branch `bootcamptca/scope-exercise-start`.
 
 Lets add more information to our screen.
 
-![Product Info](Assets/4-scope_exercise.png "Product Info")
+<img src="Assets/4-scope_exercise.png" width="200" alt="Product Info"/>
 
 ProductState static
 ```swift
