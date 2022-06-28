@@ -24,15 +24,52 @@ In this lesson, you'll learn how to use:
 
 [Slides](https://www.icloud.com/keynote/0e4wY65J0Qlt8s86UX6kKpomw#TCA_Bootcamp)
 
-Please checkout to this branch: `bootcamp`
+Please checkout to this branch: `bootcamptca-day1/0-start`
 
 Generate project: 
 ```
 tools/tulsi_generate.sh ios/TCABootcamp/TCABootcampExample ios/TCABootcamp/TCABootcampTests
 ```
 
-## Quantity Editor for Order
+The project structure is similar with other modules:
+```
+TCABootcamp
+    TCABootcamp
+    TCABootcampExample
+    TCABootcampTests
+```
 
+The source code of our files is lives inside TCABootcamp/TCABootcamp.
+The example is only consist of a ViewController that displayed a table view used only for navigating to our source code.
+
+The standard structure for the feature code is like this:
+```
+TCABootcamp
+    Order
+        OrderVC.swift
+        OrderVC+Reducer.swift
+    MyAccount
+        MyAccountVC+Reducer.swift
+        MyAccountVC.swift
+```
+
+The ViewController and the reducer is inside the same folder. Some of the developers have this structure:
+```
+TCABootcamp
+    Reducer
+        OrderVC+Reducer.swift
+        MyAccountVC+Reducer.swift
+    VC
+        OrderVC.swift
+        MyAccountVC.swift
+```
+
+The problems with the later structure are:
+- On code review, the VC and its Reducer counterpart can be far apart in the order.
+- When navigating through the Xcode/Your favorite editor's navigation folder, you need to open the Reducer / VC folder to see the counterpart. If you are using the standard structure, it's much easier to navigate the files (as it's grouped by the feature).
+
+
+## Quantity Editor for Order
 
 ![Demo Quantity Editor](Assets/0-start.gif "Quantity Editor")
 
@@ -177,6 +214,7 @@ There are some cons of computed property which are:
 
 ## Exercise 2: Enable Text Input & Add Error Message
 
+Starting Branch: `bootcamptca-day1/1-exercise2_starting_point`
 ![Add Keyboard input and Error Message](Assets/2-keyboard-input-and-error-message.gif "Add Keyboard input and Error Message")
 
 Next, we will enable keyboard input on the `TextFieldNode`. You can remove the `isEnabled = false` on `TextFieldNode`.
@@ -364,6 +402,9 @@ state.validateNumber()
 By using this style, you can call it on other place that uses this State (for example, if you need to call it on other reducers), but you can't use environment (You can still pass it as the function argument actually).
 
 ## Environment
+
+Starting Branch: `bootcamptca-day1/2-exercise3_starting_point`
+
 Lets go to the next topic, Environment. It is the entry point to the outside world and how to control the world for mocking and unit testing. Usually we put all things that we can't control in the Environment.
 
 ```swift
@@ -529,6 +570,7 @@ The unit test and failing effect save you from unintended tracker that can cause
 
 
 ## Exercise 3: Adding Order
+Starting Branch: `bootcamptca-day1/2-exercise3_starting_point`
 ![Add Order](Assets/3-add_order.gif "Add Order")
 
 To better understand of using the Environment, let's do some exercise. We will add a create button, that will act as submitting order to the server, the server will return simple `Bool`, when success show the Toast, if failed, show the errorMessage.
@@ -843,6 +885,9 @@ func testSubmitOrderFailed() {
 ```
 
 ## Scope 
+
+Branch: `bootcamptca-day1/3-scope_introduction`
+
 Let's move on, we will cover one of the most useful feature in TCA, which is scoping State and Action to child view/node. We will reuse the `CounterNode` (minus, plus button, and textField) into our next project. But now it's tightly coupled with the ViewController, let's refactor it together.
 
 Let's try the usual way to demonstrate how easy to child to parent communicatation when using TCA.
@@ -1109,7 +1154,7 @@ case let .receiveProductInfo(result):
 
 ## IfLet Introduction
 
-Branch: `bootcamptca/iflet-start`
+Branch: `bootcamptca-day1/4-ifLet_introduction`
 
 Some of you think of using default value for the productState before you get the real value from the server. There are some disadvantage on using that style, as you might have difficulty how to differentiate between default value from open the page or it is the real value which have the same value as the default one. The other one is you need to keep creating default value whenever your model size (huge/small).
 
@@ -1247,6 +1292,8 @@ static let mockFailed = Self(
 ```
 
 ## Exercise 5: Show bottom sheet using ifLet
+
+Branch: `bootcamptca-day1/5-exercise5_bottomSheet_finish_point`
 
 <img src="Assets/7-bottomsheet.png" width="200" alt="Product Detail Bottom Sheet"/>
 
@@ -1401,6 +1448,8 @@ Because our next exercise will introduce the action that will being handled by t
 
 ## Exercise 6: Adding wishlist in the bottom sheet
 
+Branch: `bootcamptca-day1/5-exercise6_wishlist_starting_point`
+
 <img src="Assets/8-bottomsheet_wishlist.png" width="200" alt="Wishlist button"/>
 
 Please checkout to the branch: `bootcamptca/product-info-wishlist`
@@ -1512,3 +1561,5 @@ func testBottomSheetState() {
     XCTAssertEqual(state.bottomSheetState, ProductDetailState.mock)
 }
 ```
+
+Finish Branch for Day 1: `bootcamptca-day1/5-exercise6_finish_point`
