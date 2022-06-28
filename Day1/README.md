@@ -215,6 +215,7 @@ There are some cons of computed property which are:
 ## Exercise 2: Enable Text Input & Add Error Message
 
 Starting Branch: `bootcamptca-day1/1-exercise2_starting_point`
+
 ![Add Keyboard input and Error Message](Assets/2-keyboard-input-and-error-message.gif "Add Keyboard input and Error Message")
 
 Next, we will enable keyboard input on the `TextFieldNode`. You can remove the `isEnabled = false` on `TextFieldNode`.
@@ -570,7 +571,9 @@ The unit test and failing effect save you from unintended tracker that can cause
 
 
 ## Exercise 3: Adding Order
+
 Starting Branch: `bootcamptca-day1/2-exercise3_starting_point`
+
 ![Add Order](Assets/3-add_order.gif "Add Order")
 
 To better understand of using the Environment, let's do some exercise. We will add a create button, that will act as submitting order to the server, the server will return simple `Bool`, when success show the Toast, if failed, show the errorMessage.
