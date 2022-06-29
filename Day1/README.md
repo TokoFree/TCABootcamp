@@ -1203,6 +1203,9 @@ store.scope(state: \.productState).actionless
 
 To create better UX for the user, we will adding loading and error user interface to indicate respective UI state. Add errorNode and loadingNode property into the `OrderVC` class.
 
+![Loading Indicator](Assets/6-loading_UI.gif)
+<img src="Assets/5-error_UI.png" width="200" alt="Error State"/>
+
 ```swift
 private var errorNode: EmptyStateNode?
 private let loadingNode = CircularActivityIndicatorNode()

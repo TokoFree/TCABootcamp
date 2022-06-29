@@ -190,7 +190,7 @@ The code is similar, so what's the benefit? The same as KeyPath, if you do the s
 
 ```swift
 extension CasePath {
-	public func modify<Result>(
+  public func modify<Result>(
     _ root: inout Root,
     _ body: (inout Value) throws -> Result
   ) throws -> Result {
@@ -432,7 +432,9 @@ private lazy var nodes = ForEachStoreNode(
 
 ![Promo List Page](Assets/2-promo-list.gif)
 
+We've provide skeleton of the UI. So you can focus on the TCA part.
 File: `PromoListVC.swift`
+
 
 
 
@@ -445,8 +447,23 @@ Exercise: Cart with multiple products
 
 If you have lots of item and need Collection functionality, please use `ListStoreNode`, otherwise you can choose both of them.
 
-## Reducer.forEach, Reducer.optional, pullback
+## Reducer.forEach
+Example: DemoForEachVC
+Exercise: PromoListVC
+
+## Reducer.pullback
+Demo: ???
+Exercise: ???
+
+## Reducer.optional
+Demo: ???
+Exercise: Adding promo bottom sheet in the Cart page.
 
 ## ListStoreNode with SwitchCaseStoreNode
+Demo: ???
+Exercise: ???
 
 ## Enum State & SwitchCaseStoreNode
+Demo: 
+Exercise 1: OrderVC
+Exercise 2: CartPage
