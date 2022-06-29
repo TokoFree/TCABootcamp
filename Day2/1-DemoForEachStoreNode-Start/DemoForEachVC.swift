@@ -24,17 +24,13 @@ internal final class DemoForEachVC: ASDKViewController<ASDisplayNode> {
             let mainStack = ASStackLayoutSpec.vertical()
             mainStack.spacing = 4
             mainStack.alignItems = .stretch
-            mainStack.children = [self.nodes, self.shuffleBtn, self.addMoreItemBtn]
+            mainStack.children = [self.nodes]
             return ASInsetLayoutSpec(insets: UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16), child: mainStack)
         }
         return node
     }()
 
     private lazy var nodes = ASDisplayNode()
-
-    private let shuffleBtn = ButtonNode(title: "Shuffle")
-
-    private let addMoreItemBtn = ButtonNode(title: "+ More Item")
 
     private let store: Store<DemoForEachState, DemoForEachAction>
 
@@ -52,18 +48,22 @@ internal final class DemoForEachVC: ASDKViewController<ASDisplayNode> {
 
     override internal func viewDidLoad() {
         super.viewDidLoad()
-        bindAction()
-    }
-
-    private func bindAction() {
-        shuffleBtn.rx.tap.asDriverOnErrorJustComplete()
-            .drive(onNext: { _ in
-                print("shuffle")
+        
+        let shuffleButton = UIBarButtonItem(title: "Shuffle", style: .plain, target: nil, action: nil)
+        let addButton = UIBarButtonItem(title: "Add", style: .plain, target: nil, action: nil)
+        navigationItem.rightBarButtonItems = [shuffleButton, addButton]
+        
+        shuffleButton.rx.tap
+            .asDriver()
+            .drive(onNext: { [store] in
+                print(".shuffle")
             })
             .disposed(by: rx.disposeBag)
-        addMoreItemBtn.rx.tap.asDriverOnErrorJustComplete()
-            .drive(onNext: { _ in
-                print("addItem")
+        
+        addButton.rx.tap
+            .asDriver()
+            .drive(onNext: { [store] in
+                print(".addItem")
             })
             .disposed(by: rx.disposeBag)
     }

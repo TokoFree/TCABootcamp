@@ -30,7 +30,10 @@ internal final class PromoListVC: ASDKViewController<ASDisplayNode> {
     private let dividerNode = DividerNode()
     
     private lazy var promoListNode = ForEachStoreNode(
-        store: store.scope(state: \.promos, action: PromoListAction.promo),
+        store: store.scope(
+            state: \.promos, 
+            action: PromoListAction.promo
+        ),
         node: PromoNode.init
     )
     private let selectedPromoCaptionNode: ASTextNode2 = {

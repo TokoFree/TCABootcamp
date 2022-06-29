@@ -6,36 +6,19 @@
 //
 
 import AsyncDisplayKit
+import CustomizableLayout
 import RxComposableArchitecture
 import RxComposableArchitectureUI
 import RxExtension
 import SharedUI
 
 internal final class DemoForEachVC: ASDKViewController<ASDisplayNode> {
-    private lazy var scrollNode: ASScrollNode = {
-        let node = ASScrollNode()
-        node.backgroundColor = .baseWhite
-        node.scrollableDirections = [.up, .down]
-        node.automaticallyManagesSubnodes = true
-        node.automaticallyManagesContentSize = true
-        node.layoutSpecBlock = { [weak self] _, _ in
-            guard let self = self else { return ASLayoutSpec() }
-
-            let mainStack = ASStackLayoutSpec.vertical()
-            mainStack.spacing = 4
-            mainStack.alignItems = .stretch
-            mainStack.children = [self.nodes]
-            return ASInsetLayoutSpec(insets: UIEdgeInsets(top: 0, left: 16, bottom: 0, right: 16), child: mainStack)
-        }
-        return node
-    }()
-
-    private lazy var nodes = ForEachStoreNode(
+    private lazy var nodes = ListStoreNode(
         store: self.store.scope(
             state: \.stackData,
             action: DemoForEachAction.child
         ),
-        layoutSpecOptions: LayoutSpecOptions(stackDirection: .vertical)
+        collectionViewLayout: CustomizableLayout.Template.verticalListLayout(spacing: 8, margins: .zero)
     ) { store in
         DemoItemNode(store: store)
     }
@@ -50,7 +33,7 @@ internal final class DemoForEachVC: ASDKViewController<ASDisplayNode> {
         node.layoutSpecBlock = { [weak self] _, _ in
             guard let self = self else { return ASLayoutSpec() }
 
-            return ASWrapperLayoutSpec(layoutElement: self.scrollNode)
+            return ASWrapperLayoutSpec(layoutElement: self.nodes)
         }
     }
 

@@ -68,7 +68,6 @@ internal let promoListReducer = Reducer<PromoListState, PromoListAction, PromoLi
         }
         return .none
     case .didTapUsePromo:
-        state.selectedPromoId
         state.selectedPromoId = state.promos.first(where: \.isSelected)?.id
         return .none
     }
