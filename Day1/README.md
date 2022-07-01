@@ -416,6 +416,8 @@ struct DemoEnvironment {
 
 The use cases of Environment is very broad. From network request, apple system framework such as getting the state of user notification permission, and even `Date`. 
 
+![Environment Demo](Assets/3-demo_environment.gif)
+
 Lets open `DemoEnvironmentVC+Reducer.swift` file and see whats inside.
 
 ```swift

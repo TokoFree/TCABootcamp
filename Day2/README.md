@@ -891,6 +891,8 @@ The test now run successfully.
 
 ✅ The best practice is ParentEnvironment has all the ChildEnvironment property.
 
+<!-- How to debug error pullback wrong type. -->
+
 
 Exercise: Refactor `CounterNode`
 
@@ -934,17 +936,16 @@ switch action {
 
 ## Reducer.forEach
 Example: DemoForEachVC
+Let's try to refactor the reducer with array type.
+
+
 Exercise: PromoListVC / CartPageVC
 
-
-
 ## ListStoreNode with SwitchCaseStoreNode
-Demo: 
-Exercise: ???
+Skipped
 
 ## Enum State & SwitchCaseStoreNode
-Demo: 
-Exercise 1: OrderVC
-Exercise 2: CartPage
+Skipped
 
 ## Extra: Form Binding
+Skipped

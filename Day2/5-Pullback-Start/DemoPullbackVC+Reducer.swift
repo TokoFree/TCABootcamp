@@ -19,7 +19,7 @@ internal enum DemoPullbackAction: Equatable {
 
 internal struct DemoPullbackEnvironment {
     internal var route: (String) -> Effect<Never>
-    internal var userId: () -> String?
+    internal var trackEvent: (String) -> Effect<Never>
 }
 
 extension DemoPullbackEnvironment {
@@ -29,8 +29,10 @@ extension DemoPullbackEnvironment {
                 print("will route to: ", url)
             }
         },
-        userId: {
-            "0"
+        trackEvent: { event in
+            .fireAndForget {
+                print("<<< tracking event of: \(event)")
+            }
         }
     )
 }
@@ -62,6 +64,7 @@ internal let demoPullbackReducer = Reducer<DemoPullbackState, DemoPullbackAction
             .fireAndForget()
     case .productCard(.didTapWishlist):
         state.productCard.isWishlist.toggle()
-        return .none
+        return env.trackEvent("Tracking wishlist to: \(state.productCard.isWishlist)")
+            .fireAndForget()
     }
 }

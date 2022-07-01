@@ -19,7 +19,7 @@ internal enum DemoPullbackAction: Equatable {
 
 internal struct DemoPullbackEnvironment {
     internal var route: (String) -> Effect<Never>
-    internal var userId: () -> String?
+    internal var trackEvent: (String) -> Effect<Never>
 }
 
 extension DemoPullbackEnvironment {
@@ -29,8 +29,10 @@ extension DemoPullbackEnvironment {
                 print("will route to: ", url)
             }
         },
-        userId: {
-            "0"
+        trackEvent: { event in
+            .fireAndForget {
+                print("<<< tracking event of: \(event)")
+            }
         }
     )
 }
@@ -52,10 +54,22 @@ internal enum ProductCardAction: Equatable {
     case didTapWishlist
 }
 
-internal let productCardReducer = Reducer<ProductCardState, ProductCardAction, (String) -> Effect<Never>> { state, action, routeHandler in
+internal struct ProductCardEnvironment {
+    internal var route: (String) -> Effect<Never>
+}
+
+extension ProductCardEnvironment {
+    internal static var mock = Self(route: { url in
+        .fireAndForget {
+            print("will route to: ", url)
+        }
+    })
+}
+
+internal let productCardReducer = Reducer<ProductCardState, ProductCardAction, ProductCardEnvironment> { state, action, env in
     switch action {
     case .didTap:
-        return routeHandler(state.url)
+        return env.route(state.url)
             .fireAndForget()
     case .didTapWishlist:
         state.isWishlist.toggle()
@@ -66,12 +80,12 @@ internal let productCardReducer = Reducer<ProductCardState, ProductCardAction, (
 private let defaultReducer = Reducer<DemoPullbackState, DemoPullbackAction, DemoPullbackEnvironment> { state, action, env in
     switch action {
     case .didLoad:
-        print("page didload, tracking with userId: ", env.userId())
         return .none
     case .productCard(.didTap):
         return .none
     case .productCard(.didTapWishlist):
-        return .none
+        return env.trackEvent("Tracking wishlist to: \(state.productCard.isWishlist)")
+            .fireAndForget()
     }
 }
 
@@ -79,7 +93,7 @@ internal let demoPullbackReducer = Reducer<DemoPullbackState, DemoPullbackAction
     productCardReducer.pullback(
         state: \.productCard,
         action: /DemoPullbackAction.productCard,
-        environment: { $0.route }
+        environment: { ProductCardEnvironment(route: $0.route) }
     ),
     defaultReducer
 )
