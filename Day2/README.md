@@ -891,7 +891,30 @@ The test now run successfully.
 
 ✅ The best practice is ParentEnvironment has all the ChildEnvironment property.
 
-<!-- How to debug error pullback wrong type. -->
+You may experiencing error when doing pullback and the error message is not helpful because Xcode can't infer it. My tips to overcome this issue is to refactor your pullback to the variable. Example:
+
+<img src="Assets/6-pullback-error.png" width="200" alt="Pullback error example"/>
+```
+❌ No exact matches in call to instance method 'pullback'
+```
+
+You can first refactor it to:
+```swift
+let pullbackReducer: Reducer<DemoPullbackState, DemoPullbackAction, DemoPullbackEnvironment> = productCardReducer.pullback(
+    state: \DemoPullbackState.productCardComputed,
+    action: /DemoPullbackAction.productCard,
+    environment: { demoPullbackEnvironment -> ProductCardEnvironment in
+        ProductCardEnvironment(route: demoPullbackEnvironment.route)
+    }
+)
+```
+
+The error will be more informative:
+```
+❌ Cannot convert value of type 'WritableKeyPath<DemoPullbackState, ProductCardState?>' to expected argument type 'WritableKeyPath<DemoPullbackState, ProductCardState>'
+```
+
+That error will guide you to know which part that cause the problem.
 
 
 Exercise: Refactor `CounterNode`
@@ -938,11 +961,87 @@ switch action {
 Example: DemoForEachVC
 Let's try to refactor the reducer with array type.
 
-
-Exercise: PromoListVC / CartPageVC
+Exercise: CartPageVC
 
 ## ListStoreNode with SwitchCaseStoreNode
-Skipped
+
+Let said you have several types of cell in the Collection, you can do that too in the ListStoreNode with the help of `SwitchCaseStoreNode`.
+
+Let's modify the PromoListVC, so it can display the ads cell as well.
+First, we create an enum to stored that different types of cell State.
+
+```swift
+struct AdsState: Equatable {
+    var name: String
+}
+
+enum ItemCellType: Equatable, HashDiffable {
+    case promo(PromoState)
+    case ads(AdsState)
+    
+    var id: String {
+        switch self {
+        case .promo(let promoState):
+            return promoState.id
+        case .ads(let adsState):
+            return adsState.name
+        }
+    }
+}
+```
+
+The `ItemCellType` need to conform to HashDiffable because we want to used it as the State type of the ForEachStoreNode/ListStoreNode.
+
+Then we create the simple the AdsAction and the AdsNode
+```swift
+enum AdsAction: Equatable {
+    case didTap
+}
+
+final class AdsNode: ASDisplayNode {
+    private let imageNode: ASImageNode = {
+        let image = ASImageNode()
+        image.image = UIImage(unifyIcon: .promo_ads_filled)
+        image.style.preferredSize = CGSize(squareWithSize: 40)
+        return image
+    }()
+    private let titleNode = ASTextNode2()
+    private let store: Store<AdsState, AdsAction>
+    init(store: Store<AdsState, AdsAction>) {
+        self.store = store
+        super.init()
+        automaticallyManagesSubnodes = true
+        bindState()
+    }
+    
+    private func bindState() {
+        store.subscribe(\.name)
+            .subscribe(onNext: { [titleNode] in
+                titleNode.attributedText = .heading2("This is Ads for \($0)")
+            })
+            .disposed(by: rx.disposeBag)
+    }
+    
+    override func didLoad() {
+        super.didLoad()
+        let tapGesture = UITapGestureRecognizer()
+        tapGesture.rx.event
+            .asDriver()
+            .drive(onNext: { [store] _ in
+                store.send(.didTap)
+            })
+            .disposed(by: rx.disposeBag)
+        view.addGestureRecognizer(tapGesture)
+    }
+    
+    override func layoutSpecThatFits(_ constrainedSize: ASSizeRange) -> ASLayoutSpec {
+        let stack = ASStackLayoutSpec(direction: .horizontal, spacing: 4, justifyContent: .start, alignItems: .stretch, children: [imageNode, titleNode])
+        return ASInsetLayoutSpec(insets: UIEdgeInsets(insetsWithInset: 4), child: stack)
+    }
+}
+```
+
+
 
 ## Enum State & SwitchCaseStoreNode
 Skipped
