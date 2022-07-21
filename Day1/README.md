@@ -1,26 +1,22 @@
-# Day 1: State, Action, Side Effect, Environment
+Table of Contents
+- [Overview Day 1](#overview-day-1)
+- [Quantity Editor for Order](#quantity-editor-for-order)
+- [Exercise 1: Disable on Minus Button](#exercise-1-disable-on-minus-button)
+- [Exercise 2: Enable Text Input & Add Error Message](#exercise-2-enable-text-input--add-error-message)
+- [Environment](#environment)
+- [Unit Testing the Environment](#unit-testing-the-environment)
+- [Exercise 3: Adding Order](#exercise-3-adding-order)
+  - [How TCA Subscription works](#how-tca-subscription-works)
+- [Scope](#scope)
+- [Exercise 4: Product Info Section](#exercise-4-product-info-section)
+- [IfLet Introduction](#iflet-introduction)
+- [Exercise 5: Show bottom sheet using ifLet](#exercise-5-show-bottom-sheet-using-iflet)
+  - [1. ifLet](#1-iflet)
+  - [2. store.subscribe](#2-storesubscribe)
+  - [3. Environment](#3-environment)
+- [Exercise 6: Adding wishlist in the bottom sheet](#exercise-6-adding-wishlist-in-the-bottom-sheet)
 
-# Table of Contents
-- [Day 1: State, Action, Side Effect, Environment](#day-1-state-action-side-effect-environment)
-- [Table of Contents](#table-of-contents)
-  - [Overview](#overview)
-  - [Quantity Editor for Order](#quantity-editor-for-order)
-  - [Exercise 1: Disable on Minus Button](#exercise-1-disable-on-minus-button)
-  - [Exercise 2: Enable Text Input & Add Error Message](#exercise-2-enable-text-input--add-error-message)
-  - [Environment](#environment)
-  - [Unit Testing the Environment](#unit-testing-the-environment)
-  - [Exercise 3: Adding Order](#exercise-3-adding-order)
-    - [How TCA Subscription works](#how-tca-subscription-works)
-  - [Scope](#scope)
-  - [Exercise 4: Product Info Section](#exercise-4-product-info-section)
-  - [IfLet Introduction](#iflet-introduction)
-  - [Exercise 5: Show bottom sheet using ifLet](#exercise-5-show-bottom-sheet-using-iflet)
-    - [1. ifLet](#1-iflet)
-    - [2. store.subscribe](#2-storesubscribe)
-    - [3. Environment](#3-environment)
-  - [Exercise 6: Adding wishlist in the bottom sheet](#exercise-6-adding-wishlist-in-the-bottom-sheet)
-
-## Overview
+## Overview Day 1
 In this lesson, you'll learn how to use:
 - State 
 - Action
