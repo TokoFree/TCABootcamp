@@ -712,7 +712,7 @@ let orderReducer = Reducer<OrderState, OrderAction, Void> {
 ```
 
 In the log you can see all the action send and the state that changed to the reducer 
-```
+```diff
 received action:
   OrderAction.didTapAddOrder
   (No state changes)
