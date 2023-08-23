@@ -42,7 +42,7 @@ struct DemoForEachState: Equatable {
     var lastId: Int = 0 // used for keep tracking of the last id
 }
 
-struct DemoItemState: Equatable, HashDiffable {
+struct DemoItemState: Equatable, Identifiable {
     var id: Int
     var text: String
     var isActive: Bool
@@ -71,7 +71,7 @@ identifiedArrayStates.remove(id: 3)
 
 In regular array the complexity of modify and removing the item by our identifier is O(n), on the other hand, it just O(1) on IdentifiedArray.
 
-The next one is `HashDiffable`. `HashDiffable` is a protocol that very similar to `Identifiable` protocol that swift introduce on iOS 13. Because we still support iOS 12, we create that protocol so the code in the ForEachStoreNode will know how to do the diffing.
+We need to conform to `Identifiable` protocol to use the IdentifiedArray.
 
 Let's move on to the Action.
 
@@ -975,7 +975,7 @@ struct AdsState: Equatable {
     var name: String
 }
 
-enum ItemCellType: Equatable, HashDiffable {
+enum ItemCellType: Equatable, Identifiable {
     case promo(PromoState)
     case ads(AdsState)
     
@@ -990,7 +990,7 @@ enum ItemCellType: Equatable, HashDiffable {
 }
 ```
 
-The `ItemCellType` need to conform to HashDiffable because we want to used it as the State type of the ForEachStoreNode/ListStoreNode.
+The `ItemCellType` need to conform to Identifiable because we want to used it as the State type of the ForEachStoreNode/ListStoreNode.
 
 Then we create the simple the AdsAction and the AdsNode
 ```swift
