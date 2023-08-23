@@ -30,7 +30,7 @@ Please checkout to this branch: `bootcamptca-day1/0-start`
 
 Generate project: 
 ```
-tools/tulsi_generate.sh ios/TCABootcamp/TCABootcampExample ios/TCABootcamp/TCABootcampTests
+tools/casper ios/TCABootcamp/TCABootcampExample ios/TCABootcamp/TCABootcampTests
 ```
 
 The project structure is similar with other modules:
