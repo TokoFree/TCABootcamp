@@ -26,7 +26,7 @@ In this lesson, you'll learn how to use:
 
 [Slides](https://www.icloud.com/keynote/0e4wY65J0Qlt8s86UX6kKpomw#TCA_Bootcamp)
 
-Please checkout to this branch: `bootcamptca-day1/0-start`
+Please checkout to this branch: `bootcamptca-day/start`
 
 Generate project: 
 ```
@@ -216,8 +216,6 @@ There are some cons of computed property which are:
 
 ## Exercise 2: Enable Text Input & Add Error Message
 
-Starting Branch: `bootcamptca-day1/1-exercise2_starting_point`
-
 ![Add Keyboard input and Error Message](Assets/2-keyboard-input-and-error-message.gif "Add Keyboard input and Error Message")
 
 Next, we will enable keyboard input on the `TextFieldNode`. You can remove the `isEnabled = false` on `TextFieldNode`.
@@ -406,8 +404,6 @@ By using this style, you can call it on other place that uses this State (for ex
 
 ## Environment
 
-Starting Branch: `bootcamptca-day1/2-exercise3_starting_point`
-
 Lets go to the next topic, Environment. It is the entry point to the outside world and how to control the world for mocking and unit testing. Usually we put all things that we can't control in the Environment.
 
 ```swift
@@ -575,8 +571,6 @@ The unit test and failing effect save you from unintended tracker that can cause
 
 
 ## Exercise 3: Adding Order
-
-Starting Branch: `bootcamptca-day1/2-exercise3_starting_point`
 
 ![Add Order](Assets/3-add_order.gif "Add Order")
 
@@ -893,8 +887,6 @@ func testSubmitOrderFailed() {
 
 ## Scope 
 
-Branch: `bootcamptca-day1/3-scope_introduction`
-
 Let's move on, we will cover one of the most useful feature in TCA, which is scoping State and Action to child view/node. We will reuse the `CounterNode` (minus, plus button, and textField) into our next project. But now it's tightly coupled with the ViewController, let's refactor it together.
 
 Let's try the usual way to demonstrate how easy to child to parent communicatation when using TCA.
@@ -1108,7 +1100,6 @@ private lazy var counterNode = CounterNode(store: store.scope(
 ```
 
 ## Exercise 4: Product Info Section
-Please checkout to the branch `bootcamptca/scope-exercise-start`.
 
 Lets add more information to our screen.
 
@@ -1160,8 +1151,6 @@ case let .receiveProductInfo(result):
 ```
 
 ## IfLet Introduction
-
-Branch: `bootcamptca-day1/4-ifLet_introduction`
 
 Some of you think of using default value for the productState before you get the real value from the server. There are some disadvantage on using that style, as you might have difficulty how to differentiate between default value from open the page or it is the real value which have the same value as the default one. The other one is you need to keep creating default value whenever your model size (huge/small).
 
@@ -1303,11 +1292,7 @@ static let mockFailed = Self(
 
 ## Exercise 5: Show bottom sheet using ifLet
 
-Branch: `bootcamptca-day1/5-exercise5_bottomSheet_finish_point`
-
 <img src="Assets/7-bottomsheet.png" width="200" alt="Product Detail Bottom Sheet"/>
-
-Please checkout to this branch: `bootcamptca/product-info-bottom-sheet`
 
 Our page still lacks of information about what are we ordered. So in this exercise we will add a new functionality to showing more information in a bottom sheet. The bottom sheet will open when user tap the `OrderProductNode`. Let's add a new action on that node, then change the Store signature to uses the new enum.
 
@@ -1458,11 +1443,8 @@ Because our next exercise will introduce the action that will being handled by t
 
 ## Exercise 6: Adding wishlist in the bottom sheet
 
-Branch: `bootcamptca-day1/5-exercise6_wishlist_starting_point`
-
 <img src="Assets/8-bottomsheet_wishlist.png" width="200" alt="Wishlist button"/>
 
-Please checkout to the branch: `bootcamptca/product-info-wishlist`
 Last exercise, we will add an action to the bottom sheet to wishlist the product, we will only toggle the `isWishlist` status when it is tapped.
 
 For this case, let we save the `isWishlist` property inside the `OrderState` (assuming the isWishlist is used in other place e.g: for analytics)
@@ -1572,4 +1554,4 @@ func testBottomSheetState() {
 }
 ```
 
-Finish Branch for Day 1: `bootcamptca-day1/5-exercise6_finish_point`
+Finish Branch for Day 1: `bootcamptca-day/finish`
