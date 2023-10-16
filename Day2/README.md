@@ -524,8 +524,6 @@ If you have lots of item and need Collection functionality, please use `ListStor
 
 ### Short story of KeyPath
 
-Branch: `bootcamptca-day2/1-starting_point`
-
 KeyPath is created to make the code more dynamic. We will not explained the detail of the KeyPath here, just a bit introduction before we introduce you to `CasePath`.
 
 Let said we have the `SecureModel`
@@ -926,8 +924,6 @@ First, we create CounterNode it's own reducer, named: `counterReducer`. Then mov
 // Continue
 
 ## Reducer.optional
-
-Branch: 
 
 Demo: Wishlist BottomSheet
 Exercise: Add Capabilities to choose promo in the CartPage.
